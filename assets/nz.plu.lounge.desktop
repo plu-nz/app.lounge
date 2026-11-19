@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Lounge
+Comment=Watch content from Stremio addons with a remote control
+Exec=lounge
+Icon=nz.plu.lounge
+Terminal=false
+Categories=AudioVideo;Video;Player;TV;
+StartupWMClass=nz.plu.lounge
