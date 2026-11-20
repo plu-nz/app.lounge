@@ -4,6 +4,12 @@
 #include <epoxy/gl.h>
 #include <epoxy/glx.h>
 #include <gtk/gtk.h>
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/wayland/gdkwayland.h>
+#endif
+#ifdef GDK_WINDOWING_X11
+#include <gdk/x11/gdkx.h>
+#endif
 #include <mpv/render_gl.h>
 #include <stdio.h>
 
@@ -21,7 +27,9 @@ static void *get_proc_address(void *ctx, const char *name) {
 
 static gboolean queue_render(gpointer data) {
 	(void)data;
-	if (gl_area) {
+	// Only redraw when mpv has a new frame for us.
+	if (gl_area && render_ctx &&
+	    (mpv_render_context_update(render_ctx) & MPV_RENDER_UPDATE_FRAME)) {
 		gtk_gl_area_queue_render(GTK_GL_AREA(gl_area));
 	}
 	return G_SOURCE_REMOVE;
@@ -40,9 +48,29 @@ static void on_realize(GtkGLArea *area, gpointer data) {
 		return;
 	}
 	mpv_opengl_init_params gl_init = {.get_proc_address = get_proc_address};
+	// Hardware decoding interop (VAAPI over EGL) needs the native display.
+	mpv_render_param display = {MPV_RENDER_PARAM_INVALID, NULL};
+	GdkDisplay *gdk_display = gtk_widget_get_display(GTK_WIDGET(area));
+#ifdef GDK_WINDOWING_WAYLAND
+	if (GDK_IS_WAYLAND_DISPLAY(gdk_display)) {
+		display = (mpv_render_param){MPV_RENDER_PARAM_WL_DISPLAY,
+			gdk_wayland_display_get_wl_display(gdk_display)};
+	}
+#endif
+#ifdef GDK_WINDOWING_X11
+	// GTK deprecates raw Xlib access, but mpv's X11 interop needs it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	if (GDK_IS_X11_DISPLAY(gdk_display)) {
+		display = (mpv_render_param){MPV_RENDER_PARAM_X11_DISPLAY,
+			gdk_x11_display_get_xdisplay(gdk_display)};
+	}
+#pragma GCC diagnostic pop
+#endif
 	mpv_render_param params[] = {
 		{MPV_RENDER_PARAM_API_TYPE, MPV_RENDER_API_TYPE_OPENGL},
 		{MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_init},
+		display,
 		{MPV_RENDER_PARAM_INVALID, NULL},
 	};
 	int err = mpv_render_context_create(&render_ctx, mpv, params);
@@ -80,9 +108,14 @@ static gboolean on_render(GtkGLArea *area, GdkGLContext *context, gpointer data)
 	glGetIntegerv(GL_VIEWPORT, viewport);
 	mpv_opengl_fbo target = {.fbo = fbo, .w = viewport[2], .h = viewport[3]};
 	int flip = 1;
+	// GTK picks when frames reach the screen, so mpv must not wait for a
+	// target time on the main loop ("video-timing-offset" is 0 as well).
+	// report_swap is not used: GTK does not tell us when the buffer flips.
+	int block = 0;
 	mpv_render_param params[] = {
 		{MPV_RENDER_PARAM_OPENGL_FBO, &target},
 		{MPV_RENDER_PARAM_FLIP_Y, &flip},
+		{MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME, &block},
 		{MPV_RENDER_PARAM_INVALID, NULL},
 	};
 	mpv_render_context_render(render_ctx, params);

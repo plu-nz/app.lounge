@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -38,7 +39,7 @@ var observed = []string{
 	"pause", "time-pos", "duration", "paused-for-cache", "cache-buffering-state",
 	"demuxer-cache-time", "track-list", "aid", "sid", "volume", "mute", "speed",
 	"sub-delay", "sub-scale", "sub-pos", "idle-active", "eof-reached", "media-title",
-	"video-params/w", "video-params/h", "seeking",
+	"video-params/w", "video-params/h", "seeking", "hwdec-current",
 }
 
 // Player owns one mpv core.
@@ -57,7 +58,13 @@ func New(emit func(Event)) (*Player, error) {
 	p := &Player{handle: h, emit: emit}
 	options := [][2]string{
 		{"vo", "libmpv"},
-		{"hwdec", "auto-safe"},
+		// VAAPI first: it is what AMD and Intel GPUs offer on Linux, and
+		// auto-safe would otherwise try Vulkan and CUDA, which this OpenGL
+		// render path cannot use.
+		{"hwdec", "vaapi,auto-safe"},
+		// GTK draws frames on its own clock, so mpv must not block the main
+		// loop waiting for a frame's target time.
+		{"video-timing-offset", "0"},
 		{"idle", "yes"},
 		{"keep-open", "no"},
 		{"terminal", "no"},
@@ -90,7 +97,27 @@ func New(emit func(Event)) (*Player, error) {
 		C.free(unsafe.Pointer(cname))
 	}
 	go p.loop()
+	if os.Getenv("LOUNGE_DEBUG") != "" {
+		go p.logStats()
+	}
 	return p, nil
+}
+
+// logStats prints playback health every few seconds (LOUNGE_DEBUG=1).
+func (p *Player) logStats() {
+	for range time.Tick(5 * time.Second) {
+		var parts []string
+		for _, name := range []string{"hwdec-current", "estimated-vf-fps", "frame-drop-count", "decoder-frame-drop-count", "vo-delayed-frame-count", "avsync", "vsync-jitter", "video-params/w"} {
+			v, err := p.Property(name)
+			if err != nil {
+				continue
+			}
+			parts = append(parts, name+"="+string(v))
+		}
+		if len(parts) > 0 {
+			log.Printf("mpv stats: %s", strings.Join(parts, " "))
+		}
+	}
 }
 
 // Attach places the video under the webview of the given GtkWindow.

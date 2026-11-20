@@ -26,6 +26,12 @@ var assets embed.FS
 const appID = "nz.plu.lounge"
 
 func main() {
+	// GTK's default Vulkan renderer has to import every OpenGL video frame
+	// from the GtkGLArea, which halves the frame rate on integrated GPUs.
+	// Its OpenGL renderer composites the GL area directly.
+	if os.Getenv("GSK_RENDERER") == "" {
+		os.Setenv("GSK_RENDERER", "ngl")
+	}
 	st, err := store.Open("lounge")
 	if err != nil {
 		log.Fatalf("config dir: %v", err)

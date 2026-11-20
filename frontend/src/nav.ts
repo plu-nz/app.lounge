@@ -73,6 +73,14 @@ function center(r: DOMRect) {
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
 
+/** alignedWith reports a real overlap on the other axis, not a touching edge. */
+function alignedWith(from: DOMRect, to: DOMRect, dir: Dir): boolean {
+  const [a0, a1, b0, b1] =
+    dir === 'left' || dir === 'right' ? [from.top, from.bottom, to.top, to.bottom] : [from.left, from.right, to.left, to.right];
+  const overlap = Math.min(a1, b1) - Math.max(a0, b0);
+  return overlap > Math.min(a1 - a0, b1 - b0) * 0.3;
+}
+
 function score(from: DOMRect, to: DOMRect, dir: Dir): number {
   const a = center(from);
   const b = center(to);
@@ -101,14 +109,21 @@ export function move(dir: Dir): boolean {
   }
   const from = current.getBoundingClientRect();
   const fromGroup = current.closest<HTMLElement>('[data-nav-group]');
+  // Candidates in the same row (or column) win over any diagonal one, so a
+  // wide element above, like a seek bar, never steals a sideways move.
   let best: HTMLElement | null = null;
   let bestScore = Infinity;
+  let bestAligned = false;
   for (const el of all) {
     if (el === current) continue;
-    const s = score(from, el.getBoundingClientRect(), dir);
-    if (s < bestScore) {
+    const to = el.getBoundingClientRect();
+    const s = score(from, to, dir);
+    if (s === Infinity) continue;
+    const aligned = alignedWith(from, to, dir);
+    if ((aligned && !bestAligned) || (aligned === bestAligned && s < bestScore)) {
       bestScore = s;
       best = el;
+      bestAligned = aligned;
     }
   }
   if (!best) return false;
