@@ -1042,6 +1042,15 @@ button {
   pointer-events: none;
 }
 
+/* Keep the overlays on their own compositor layers. Fading them then only
+   changes opacity; otherwise WebKit repaints the full-screen gradient on
+   every frame of the fade, which drops video frames and flickers at 4K. */
+.player .scrim,
+.player .top,
+.player .controls {
+  will-change: opacity;
+}
+
 .player .top {
   position: absolute;
   top: 2.4rem;

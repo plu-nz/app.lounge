@@ -55,7 +55,8 @@ func New(emit func(Event)) (*Player, error) {
 	if h == nil {
 		return nil, errors.New("mpv_create failed")
 	}
-	p := &Player{handle: h, emit: emit}
+	// Properties that change every frame reach the UI a few times a second.
+	p := &Player{handle: h, emit: newThrottle(200*time.Millisecond, emit, "time-pos", "demuxer-cache-time").send}
 	options := [][2]string{
 		{"vo", "libmpv"},
 		// VAAPI first: it is what AMD and Intel GPUs offer on Linux, and
