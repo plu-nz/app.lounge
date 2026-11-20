@@ -2,6 +2,8 @@
 
 Lounge is a Linux TV app for watching content from [Stremio addons](https://github.com/Stremio/stremio-addon-sdk) with a remote control, a gamepad, or a keyboard. It shows catalogs, details, episodes, and sources in a 10-foot interface and plays video with mpv inside the same window.
 
+Website and downloads: [lounge.plu.nz](https://lounge.plu.nz/).
+
 "Lounge" is a working name. The design takes inspiration from [Lumera](https://github.com/LumeraD3v/Lumera), an Android TV client, but Lounge is written from scratch and contains no Lumera code.
 
 ## Features
@@ -58,11 +60,21 @@ sudo pacman -S --needed go pnpm gtk4 webkitgtk-6.0 mpv libepoxy
 
 ## Install
 
+Download `lounge-linux-x86_64.tar.gz` from the [latest release](https://github.com/plu-nz/app.lounge/releases/latest), install the runtime libraries, and run the installer inside the archive:
+
+```bash
+sudo pacman -S --needed gtk4 webkitgtk-6.0 mpv libepoxy
+tar -xzf lounge-linux-x86_64.tar.gz
+cd lounge-*/ && ./install.sh
+```
+
+Release archives are built on Arch Linux for x86_64. To build from source instead, run the same script from the repository:
+
 ```bash
 ./scripts/install.sh
 ```
 
-This builds the app and installs:
+Either way, the script installs:
 
 - `~/.local/bin/lounge`;
 - a desktop entry (`nz.plu.lounge.desktop`);
@@ -86,3 +98,7 @@ The project layout and conventions are in [AGENTS.md](AGENTS.md).
 - Settings, installed addons, and watch progress are stored as JSON in `~/.config/lounge/`.
 - Torrent data is kept in `~/.cache/lounge/torrents/` only while it plays. Lounge removes it when playback stops, at exit, and at the next launch.
 - Lounge does not seed.
+
+## Releases and website
+
+Pushing a `v*` tag runs [the release workflow](.github/workflows/release.yml): it builds Lounge in an Arch Linux container and publishes `lounge-linux-x86_64.tar.gz` with its SHA-256 sum through [scripts/package.sh](scripts/package.sh). The landing page in [site/](site/README.md) links to that archive and is deployed separately to lounge.plu.nz.
