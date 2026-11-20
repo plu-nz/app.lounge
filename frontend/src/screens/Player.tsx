@@ -12,6 +12,8 @@ import { episodeLabel } from './Details';
 type Track = { id: number; type: 'video' | 'audio' | 'sub'; lang?: string; title?: string; codec?: string; external?: boolean; selected?: boolean; 'demux-channel-count'?: number };
 
 const hideAfter = 4000;
+const mouseRevealDistance = 24;
+const mouseRevealWindow = 750;
 // Remote "menu" buttons arrive as the ContextMenu key (XKB Menu).
 const menuKeys = new Set(['ContextMenu', 'Menu']);
 const seekStep = 10;
@@ -71,6 +73,8 @@ export function Player(props: { play: PlayContext; active: boolean }) {
   let saveTimer: number | undefined;
   let ended = false;
   let closing = false;
+  let mousePosition: { x: number; y: number } | undefined;
+  let mouseMoveStart: { x: number; y: number; at: number } | undefined;
 
   const showControls = (focus = true) => {
     setVisible(true);
@@ -80,6 +84,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
       if (!paused() && !menu() && started()) {
         setVisible(false);
         document.body.classList.add('mouse-hidden');
+        mouseMoveStart = undefined;
       }
     }, hideAfter);
     if (focus && !document.activeElement?.closest('.player .controls')) {
@@ -92,6 +97,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
     clearTimeout(hideTimer);
     setVisible(false);
     document.body.classList.add('mouse-hidden');
+    mouseMoveStart = undefined;
   };
 
   // The Menu key can arrive as a keydown and then a contextmenu event; act once.
@@ -317,7 +323,26 @@ export function Player(props: { play: PlayContext; active: boolean }) {
       if (props.active && !menu()) toggleFromMenu();
     };
     addEventListener('contextmenu', onContextMenu, true);
-    const onMouse = () => props.active && showControls(false);
+    // WebKit and pointer devices can emit stationary or tiny mouse moves during playback.
+    const onMouse = (e: MouseEvent) => {
+      if (!props.active) return;
+      const current = { x: e.clientX, y: e.clientY };
+      if (mousePosition?.x === current.x && mousePosition.y === current.y) return;
+      mousePosition = current;
+      if (visible()) {
+        showControls(false);
+        return;
+      }
+      const now = performance.now();
+      if (!mouseMoveStart || now - mouseMoveStart.at > mouseRevealWindow) {
+        mouseMoveStart = { ...current, at: now };
+        return;
+      }
+      if (Math.hypot(current.x - mouseMoveStart.x, current.y - mouseMoveStart.y) >= mouseRevealDistance) {
+        mouseMoveStart = undefined;
+        showControls(false);
+      }
+    };
     addEventListener('mousemove', onMouse);
 
     const offBack = onBack(() => {
