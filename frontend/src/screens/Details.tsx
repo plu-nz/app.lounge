@@ -5,7 +5,7 @@ import { Backdrop, MetaLine, Spinner, errorText, toast } from '../components';
 import { t } from '../i18n';
 import { focusEl, focusFirst } from '../nav';
 import { push } from '../router';
-import { findStream, streamKey, StreamPicker, toRequest } from '../streams';
+import { findStream, SourceRows, streamKey, toRequest } from '../streams';
 
 type Pick = { video: Video | null; videoId: string; start: number; label: string };
 
@@ -27,7 +27,16 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
   const [entry, { refetch: refetchEntry }] = createResource(() => library.get(props.id));
   const [watched, setWatched] = createSignal<Set<string>>(new Set());
   const [season, setSeason] = createSignal<number>();
-  const [picking, setPicking] = createSignal<Pick>();
+  const [picking, setPickingSignal] = createSignal<Pick>();
+  let pickedFrom: HTMLElement | null = null;
+  const setPicking = (pick: Pick | undefined) => {
+    if (pick && !picking()) pickedFrom = document.activeElement as HTMLElement | null;
+    setPickingSignal(pick);
+    if (!pick && pickedFrom?.isConnected) {
+      const back = pickedFrom;
+      queueMicrotask(() => focusEl(back));
+    }
+  };
 
   const item = (): Partial<Meta> => ({ ...props.preview, ...(meta() && !('error' in meta()!) ? meta() : {}) });
   const videos = createMemo(() => sortVideos(item().videos));
@@ -184,6 +193,22 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
               </button>
             </Show>
           </div>
+          <Show when={picking()} keyed>
+            {(pick) => (
+              <SourceRows
+                type={props.type}
+                videoId={pick.videoId}
+                label={
+                  pick.video
+                    ? `${t('streams.title')} · ${episodeLabel(pick.video)} ${pick.video.name ?? pick.video.title ?? ''}`
+                    : t('streams.title')
+                }
+                selectedKey={entry()?.videoId === pick.videoId ? entry()?.streamKey : undefined}
+                onPick={(s, g) => play(pick, s, g)}
+                onClose={() => setPicking(undefined)}
+              />
+            )}
+          </Show>
         </div>
 
         <Show when={isSeries()}>
@@ -237,19 +262,6 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
         </Show>
       </div>
 
-      <Show when={picking()}>
-        {(pick) => (
-          <StreamPicker
-            type={props.type}
-            videoId={pick().videoId}
-            title={item().name ?? ''}
-            subtitle={pick().video ? `${item().name} · ${episodeLabel(pick().video!)} ${pick().video!.name ?? pick().video!.title ?? ''}` : item().name}
-            selectedKey={entry()?.videoId === pick().videoId ? entry()?.streamKey : undefined}
-            onPick={(s, g) => play(pick(), s, g)}
-            onClose={() => setPicking(undefined)}
-          />
-        )}
-      </Show>
     </div>
   );
 }
