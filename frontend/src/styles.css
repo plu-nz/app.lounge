@@ -6,10 +6,15 @@ html {
 }
 
 /* Extra accents beyond the shared library's four, from Catppuccin Mocha,
-   which Darkppuccin follows. */
+   which Darkppuccin follows. The "theme" accent is the GTK theme's own. */
 .plz-theme {
   --plz-mauve: #cba6f7;
   --plz-lavender: #b4befe;
+}
+
+.plz-theme[data-plz-accent='theme'] {
+  --plz-accent: var(--plz-theme-accent, var(--plz-blue));
+  --plz-focus: var(--plz-theme-accent, var(--plz-blue));
 }
 
 .plz-theme[data-plz-accent='mauve'] {
@@ -51,7 +56,7 @@ body.mouse-hidden * {
   --card-w: 9.6rem;
   --wide-w: 17rem;
   --ring: 0.2rem;
-  --shade: rgba(15, 15, 15, 0.92);
+  --shade: color-mix(in srgb, var(--plz-bg) 92%, transparent);
   --radius: 0.7rem;
   background: var(--plz-bg);
   transition: background 0.2s;
@@ -112,8 +117,8 @@ button {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, var(--plz-bg) 22%, rgba(15, 15, 15, 0.75) 45%, rgba(15, 15, 15, 0.1) 75%),
-    linear-gradient(0deg, var(--plz-bg) 8%, rgba(15, 15, 15, 0) 55%);
+    linear-gradient(90deg, var(--plz-bg) 22%, color-mix(in srgb, var(--plz-bg) 75%, transparent) 45%, color-mix(in srgb, var(--plz-bg) 10%, transparent) 75%),
+    linear-gradient(0deg, var(--plz-bg) 8%, color-mix(in srgb, var(--plz-bg) 0%, transparent) 55%);
 }
 
 .backdrop.full img {
@@ -139,7 +144,7 @@ button {
 
 .rail:has(.focused) {
   width: 17rem;
-  background: linear-gradient(90deg, rgba(15, 15, 15, 0.98) 60%, rgba(15, 15, 15, 0));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--plz-bg) 98%, transparent) 60%, color-mix(in srgb, var(--plz-bg) 0%, transparent));
 }
 
 .rail .brand {
@@ -431,9 +436,9 @@ button {
   gap: 0.7rem;
   height: 3rem;
   padding: 0 1.5rem;
-  border: 0.12rem solid rgba(205, 214, 244, 0.25);
+  border: 0.12rem solid color-mix(in srgb, var(--plz-text) 25%, transparent);
   border-radius: var(--radius);
-  background: rgba(28, 28, 28, 0.6);
+  background: color-mix(in srgb, var(--plz-surface) 60%, transparent);
   color: var(--plz-text);
   font-size: 1rem;
   font-weight: 700;
@@ -562,8 +567,8 @@ button {
   height: 2.5rem;
   padding: 0 1.2rem;
   border-radius: 1.25rem;
-  border: 0.12rem solid rgba(205, 214, 244, 0.2);
-  background: rgba(28, 28, 28, 0.7);
+  border: 0.12rem solid color-mix(in srgb, var(--plz-text) 20%, transparent);
+  background: color-mix(in srgb, var(--plz-surface) 70%, transparent);
   color: var(--plz-muted);
   font-size: 0.95rem;
   font-weight: 700;
@@ -603,7 +608,7 @@ button {
   padding: 0.55rem 0.55rem 0.8rem;
   border: 0;
   border-radius: var(--radius);
-  background: rgba(28, 28, 28, 0.7);
+  background: color-mix(in srgb, var(--plz-surface) 70%, transparent);
   color: var(--plz-text);
   text-align: left;
   cursor: pointer;
@@ -717,7 +722,7 @@ button {
   width: min(40rem, 46vw);
   display: flex;
   flex-direction: column;
-  background: rgba(22, 22, 26, 0.9);
+  background: color-mix(in srgb, var(--plz-surface) 90%, transparent);
   backdrop-filter: blur(1.4rem);
   border-left: 1px solid var(--plz-line);
   animation: slide-in 0.18s ease-out;
@@ -774,7 +779,7 @@ button {
   padding: 0.7rem 1rem;
   border: 0;
   border-radius: var(--radius);
-  background: rgba(49, 50, 68, 0.45);
+  background: color-mix(in srgb, var(--plz-raised) 45%, transparent);
   text-align: left;
   color: var(--plz-text);
   cursor: pointer;
@@ -823,11 +828,11 @@ button {
 }
 
 .option.focused .sub {
-  color: rgba(15, 15, 15, 0.75);
+  color: color-mix(in srgb, var(--plz-bg) 75%, transparent);
 }
 
 .option.focused .badge {
-  background: rgba(15, 15, 15, 0.2);
+  background: color-mix(in srgb, var(--plz-bg) 20%, transparent);
 }
 
 .option.selected:not(.focused) {
@@ -1342,7 +1347,7 @@ button {
   padding: 0.9rem 1rem;
   border: 0;
   border-radius: var(--radius);
-  background: rgba(36, 36, 44, 0.88);
+  background: color-mix(in srgb, var(--plz-surface) 88%, transparent);
   text-align: left;
   color: var(--plz-text);
   cursor: pointer;
@@ -1381,7 +1386,7 @@ button {
 .source .badge {
   padding: 0.1rem 0.45rem;
   border-radius: 0.3rem;
-  background: rgba(205, 214, 244, 0.12);
+  background: color-mix(in srgb, var(--plz-text) 12%, transparent);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -1393,7 +1398,7 @@ button {
 }
 
 .source.focused .badge {
-  background: rgba(15, 15, 15, 0.15);
+  background: color-mix(in srgb, var(--plz-bg) 15%, transparent);
 }
 
 .source.focused .badge.strong {
@@ -1452,5 +1457,5 @@ button {
 
 .source.focused .source-file,
 .source.focused .source-meta {
-  color: rgba(15, 15, 15, 0.75);
+  color: color-mix(in srgb, var(--plz-bg) 75%, transparent);
 }

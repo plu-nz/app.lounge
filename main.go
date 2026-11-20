@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/plu-nz/app.lounge/internal/gtktheme"
 	"github.com/plu-nz/app.lounge/internal/library"
 	"github.com/plu-nz/app.lounge/internal/player"
 	"github.com/plu-nz/app.lounge/internal/settings"
@@ -62,6 +63,7 @@ func main() {
 		log.Printf("torrents disabled: %v", err)
 	}
 
+	themes := &ThemeService{debug: os.Getenv("LOUNGE_DEBUG") != ""}
 	var app *application.App
 	video, err := player.New(func(e player.Event) {
 		if app != nil {
@@ -88,6 +90,7 @@ func main() {
 			application.NewService(&AddonService{addons: addons}),
 			application.NewService(&LibraryService{library: lib}),
 			application.NewService(&SettingsService{settings: prefs}),
+			application.NewService(themes),
 			application.NewService(account),
 			application.NewService(&AppService{debug: os.Getenv("LOUNGE_DEBUG") != ""}),
 		},
@@ -134,6 +137,22 @@ func main() {
 			if err := video.Attach(window.NativeWindow()); err != nil {
 				log.Printf("video surface: %v", err)
 			}
+			// The UI may ask before this runs; the event makes it ask again.
+			if themes.set(gtktheme.Read(window.NativeWindow())) {
+				app.Event.Emit("theme")
+			}
+			// GTK restyles after it announces a theme change, so read the
+			// colors a moment later.
+			gtktheme.Watch(func() {
+				time.AfterFunc(200*time.Millisecond, func() {
+					changed := application.InvokeSyncWithResult(func() bool {
+						return themes.set(gtktheme.Read(window.NativeWindow()))
+					})
+					if changed {
+						app.Event.Emit("theme")
+					}
+				})
+			})
 		})
 	})
 

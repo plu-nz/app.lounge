@@ -18,7 +18,11 @@ type Settings struct {
 	SubtitleScale float64 `json:"subtitleScale"`
 	// AutoplayNext starts the next episode when one ends.
 	AutoplayNext bool `json:"autoplayNext"`
-	// Accent selects an approved Darkppuccin accent.
+	// Theme is "gtk" to follow the desktop's GTK theme or "lounge" for the
+	// built-in Darkppuccin colors. Empty means "gtk".
+	Theme string `json:"theme"`
+	// Accent is "theme" for the GTK theme's accent, or one of the
+	// Darkppuccin accents.
 	Accent string `json:"accent"`
 }
 
@@ -29,7 +33,8 @@ func Defaults() Settings {
 		SubtitleLanguages: []string{},
 		SubtitleScale:     1,
 		AutoplayNext:      true,
-		Accent:            "blue",
+		Theme:             "gtk",
+		Accent:            "theme",
 	}
 }
 
@@ -45,8 +50,15 @@ const doc = "settings"
 // Load reads settings, falling back to defaults.
 func Load(st *store.Store) (*Manager, error) {
 	m := &Manager{store: st, s: Defaults()}
+	// A file without a theme keeps it empty, which marks older settings.
+	m.s.Theme = ""
 	if _, err := st.Load(doc, &m.s); err != nil {
 		return nil, err
+	}
+	// Settings saved before the theme option existed picked an accent among
+	// Lounge's own colors only; they now follow the GTK theme and its accent.
+	if m.s.Theme == "" {
+		m.s.Theme, m.s.Accent = "gtk", "theme"
 	}
 	return m, nil
 }

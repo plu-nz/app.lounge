@@ -5,7 +5,7 @@ import './styles.css';
 import { Rail, Toast } from './components';
 import { focusEl, focusFirst, installNavigation, onBack } from './nav';
 import { depth, pop, restoredFocus, route, stackRoutes, type Route } from './router';
-import { loadSettings, settings } from './settings';
+import { loadSettings } from './settings';
 import { Details } from './screens/Details';
 import { Home } from './screens/Home';
 import { Addons, Grid, Search, SettingsPage } from './screens/Pages';
@@ -73,7 +73,7 @@ function App() {
   const isRoot = () => depth() === 1;
   const playing = () => route().name === 'player';
   return (
-    <div class="app plz-theme" data-plz-shape="rounded" data-plz-accent={settings().accent || 'blue'} classList={{ playing: playing() }}>
+    <div class="app plz-theme" data-plz-shape="rounded" data-plz-accent="theme" classList={{ playing: playing() }}>
       <For each={stackRoutes()}>
         {(r, i) => (
           <div class="screen" classList={{ hidden: i() !== stackRoutes().length - 1 }}>

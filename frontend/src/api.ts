@@ -100,7 +100,31 @@ export type Settings = {
   subtitleLanguages: string[];
   subtitleScale: number;
   autoplayNext: boolean;
+  /** theme is 'gtk' (follow the desktop) or 'lounge'; empty means 'gtk'. */
+  theme: string;
   accent: string;
+};
+
+/** GtkTheme is the desktop's GTK theme; colors are CSS values, empty when undefined. */
+export type GtkTheme = {
+  name: string;
+  dark: boolean;
+  background: string;
+  surface: string;
+  text: string;
+  accent: string;
+  onAccent: string;
+  border: string;
+  subtle: string;
+  error: string;
+  success: string;
+  warning: string;
+};
+
+export const themeApi = {
+  gtk: () => Call.ByName('main.ThemeService.GTK') as Promise<GtkTheme>,
+  /** onChange runs when the desktop's GTK theme changes. */
+  onChange: (fn: () => void) => Events.On('theme', fn),
 };
 
 export type PlayRequest = {

@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"log"
+	"sync"
 	"time"
 
+	"github.com/plu-nz/app.lounge/internal/gtktheme"
 	"github.com/plu-nz/app.lounge/internal/library"
 	"github.com/plu-nz/app.lounge/internal/settings"
 	"github.com/plu-nz/app.lounge/internal/stremio"
@@ -147,4 +149,29 @@ func (s *AppService) Log(message string) {
 	if s.debug {
 		log.Printf("ui: %s", message)
 	}
+}
+
+// ThemeService reports the desktop's GTK theme colors.
+type ThemeService struct {
+	debug bool
+	mu    sync.Mutex
+	theme gtktheme.Theme
+}
+
+// GTK returns the active GTK theme's palette.
+func (s *ThemeService) GTK() gtktheme.Theme {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.theme
+}
+
+func (s *ThemeService) set(t gtktheme.Theme) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	changed := s.theme != t
+	s.theme = t
+	if changed && s.debug {
+		log.Printf("gtk theme: %+v", t)
+	}
+	return changed
 }

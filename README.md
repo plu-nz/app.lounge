@@ -21,6 +21,7 @@ Lounge is a Linux TV app for watching content from [Stremio addons](https://gith
   - audio and subtitle tracks, including addon subtitles;
   - playback speed;
   - switching sources while keeping the position.
+- Follows the desktop's GTK theme, light or dark, including its accent color, and switches when the theme changes. The built-in Lounge colors stay available in Settings.
 - Continue watching with resume. When resuming, Lounge prefers the last source used.
 - Automatic next episode, using the same binge group when the addon provides one.
 - English, Portuguese, and Spanish UI. The language follows the system unless one is chosen in Settings.

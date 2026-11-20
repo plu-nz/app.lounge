@@ -6,7 +6,7 @@ import { Card, errorText, Spinner, toast } from '../components';
 import { lang, languageNames, languages, t, typeName } from '../i18n';
 import { focusEl, focusFirst } from '../nav';
 import { push } from '../router';
-import { settings, updateSettings } from '../settings';
+import { followsGtk, gtkTheme, settings, updateSettings } from '../settings';
 
 /* Search ---------------------------------------------------------------- */
 
@@ -306,7 +306,8 @@ export function Addons() {
 
 /* Settings ---------------------------------------------------------------- */
 
-const accents = ['blue', 'mauve', 'lavender', 'green', 'orange', 'red'];
+const namedAccents = ['blue', 'mauve', 'lavender', 'green', 'orange', 'red'];
+const themes = ['gtk', 'lounge'];
 const mediaLangs = ['', 'por', 'eng', 'spa'];
 const subSizes = [0.8, 1, 1.2, 1.4, 1.6];
 
@@ -322,6 +323,9 @@ function langLabel(code: string) {
 export function SettingsPage(props: { active: boolean }) {
   onMount(() => queueMicrotask(() => focusFirst(document.querySelector('.settings-list') ?? document)));
   const s = settings;
+  // The theme's own accent is offered only while following the GTK theme.
+  const accents = () => (followsGtk() ? ['theme', ...namedAccents] : namedAccents);
+  const accent = () => (accents().includes(s().accent) ? s().accent : 'blue');
   const [status, { refetch, mutate }] = createResource(() => props.active, () => account.status());
   const syncedLabel = () => {
     const at = status()?.syncedAt;
@@ -391,9 +395,18 @@ export function SettingsPage(props: { active: boolean }) {
           () => void updateSettings({ language: cycle(langPref, s().language) }),
         )}
         {item(
+          () => t('settings.theme'),
+          () => ((s().theme || 'gtk') === 'gtk' ? t('settings.themeGtk', { name: gtkTheme()?.name || 'GTK' }) : 'Lounge'),
+          () => {
+            const theme = cycle(themes, s().theme || 'gtk');
+            // Following the desktop also takes its accent.
+            void updateSettings({ theme, accent: theme === 'gtk' ? 'theme' : s().accent === 'theme' ? 'blue' : s().accent });
+          },
+        )}
+        {item(
           () => t('settings.accent'),
-          () => t(`accent.${s().accent || 'blue'}` as Parameters<typeof t>[0]),
-          () => void updateSettings({ accent: cycle(accents, s().accent || 'blue') }),
+          () => t(`accent.${accent()}` as Parameters<typeof t>[0]),
+          () => void updateSettings({ accent: cycle(accents(), accent()) }),
         )}
         {item(
           () => t('settings.autoplay'),
