@@ -12,6 +12,8 @@ import { episodeLabel } from './Details';
 type Track = { id: number; type: 'video' | 'audio' | 'sub'; lang?: string; title?: string; codec?: string; external?: boolean; selected?: boolean; 'demux-channel-count'?: number };
 
 const hideAfter = 4000;
+// Remote "menu" buttons arrive as the ContextMenu key (XKB Menu).
+const menuKeys = new Set(['ContextMenu', 'Menu']);
 const seekStep = 10;
 
 export function formatTime(s: number): string {
@@ -84,6 +86,12 @@ export function Player(props: { play: PlayContext; active: boolean }) {
       const btn = document.querySelector<HTMLElement>('.player [data-nav-default]');
       if (btn) focusEl(btn);
     }
+  };
+
+  const hideControls = () => {
+    clearTimeout(hideTimer);
+    setVisible(false);
+    document.body.classList.add('mouse-hidden');
   };
 
   const flash = (text: string) => {
@@ -270,7 +278,23 @@ export function Player(props: { play: PlayContext; active: boolean }) {
         if (onSeekBar) showControls(false);
         return;
       }
-      if (!visible() && (k === 'ArrowUp' || k === 'ArrowDown' || k === 'Enter')) {
+      // Menu toggles the controls without touching playback.
+      if (menuKeys.has(k)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (visible() && started() && !paused() && !error()) hideControls();
+        else showControls();
+        return;
+      }
+      // OK on a bare video pauses and shows the controls together.
+      if (!visible() && k === 'Enter') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (started() && !paused()) void player.set('pause', true);
+        showControls();
+        return;
+      }
+      if (!visible() && (k === 'ArrowUp' || k === 'ArrowDown')) {
         e.preventDefault();
         e.stopImmediatePropagation();
         showControls();
@@ -289,8 +313,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
         return true;
       }
       if (visible() && started() && !paused() && !error()) {
-        setVisible(false);
-        document.body.classList.add('mouse-hidden');
+        hideControls();
         return true;
       }
       exit();

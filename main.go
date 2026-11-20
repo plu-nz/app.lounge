@@ -89,6 +89,7 @@ func main() {
 			application.NewService(&LibraryService{library: lib}),
 			application.NewService(&SettingsService{settings: prefs}),
 			application.NewService(account),
+			application.NewService(&AppService{debug: os.Getenv("LOUNGE_DEBUG") != ""}),
 		},
 		OnShutdown: func() {
 			application.InvokeSync(video.Detach)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/plu-nz/app.lounge/internal/library"
@@ -132,3 +133,18 @@ func (s *SettingsService) Get() settings.Settings { return s.settings.Get() }
 
 // Set saves the preferences.
 func (s *SettingsService) Set(v settings.Settings) error { return s.settings.Set(v) }
+
+// AppService exposes app-level helpers to the UI.
+type AppService struct {
+	debug bool
+}
+
+// Debug reports whether LOUNGE_DEBUG is set.
+func (s *AppService) Debug() bool { return s.debug }
+
+// Log writes a UI diagnostic line to the app log when debugging.
+func (s *AppService) Log(message string) {
+	if s.debug {
+		log.Printf("ui: %s", message)
+	}
+}

@@ -1,6 +1,6 @@
 import { render } from 'solid-js/web';
 import { createEffect, For, on, onMount, Show } from 'solid-js';
-import { Window } from '@wailsio/runtime';
+import { Call, Window } from '@wailsio/runtime';
 import './styles.css';
 import { Rail, Toast } from './components';
 import { focusEl, focusFirst, installNavigation, onBack } from './nav';
@@ -44,6 +44,15 @@ function App() {
     }
   });
   onMount(() => void loadSettings().catch(() => undefined));
+  // LOUNGE_DEBUG=1 logs every key, to map remote control buttons.
+  void Call.ByName('main.AppService.Debug').then((debug: boolean) => {
+    if (!debug) return;
+    addEventListener(
+      'keydown',
+      (e) => void Call.ByName('main.AppService.Log', `key=${JSON.stringify(e.key)} code=${e.code} keyCode=${e.keyCode}`),
+      true,
+    );
+  });
 
   // Return focus to where it was when a pushed screen closes.
   createEffect(

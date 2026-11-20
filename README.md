@@ -30,13 +30,16 @@ Lounge is a Linux TV app for watching content from [Stremio addons](https://gith
 | Key | Action |
 | --- | --- |
 | Arrows | Move focus. In the player with hidden controls, left and right seek 10 s |
-| Enter | Select |
+| Enter (OK) | Select. In the player with hidden controls, pause and show the controls |
+| Menu | In the player, show or hide the controls without pausing |
 | Escape, Backspace, Back | Go back. In the player, back first hides the controls |
 | Space | Pause or play |
 | F11 | Toggle fullscreen |
 | Media keys | Play, pause, next episode, seek |
 
 Remote controls that present themselves as keyboards work as they are.
+
+To see which keys a remote sends, run `LOUNGE_DEBUG=1 lounge`: every key press is logged as `ui: key=...`.
 
 ## Requirements
 
