@@ -4,6 +4,7 @@
 #include <epoxy/gl.h>
 #include <epoxy/glx.h>
 #include <gtk/gtk.h>
+#include <webkit/webkit.h>
 #ifdef GDK_WINDOWING_WAYLAND
 #include <gdk/wayland/gdkwayland.h>
 #endif
@@ -122,6 +123,34 @@ static gboolean on_render(GtkGLArea *area, GdkGLContext *context, gpointer data)
 	return TRUE;
 }
 
+// The TV UI has no right-click menu, and a remote's Menu key must reach
+// the page instead of opening WebKit's Back/Reload/Inspect menu.
+static gboolean suppress_context_menu(WebKitWebView *view, WebKitContextMenu *menu,
+                                      WebKitHitTestResult *hit, gpointer data) {
+	(void)view;
+	(void)menu;
+	(void)hit;
+	(void)data;
+	return TRUE;
+}
+
+// WebKit handles the Menu key natively (it opens its context menu and moves
+// keyboard focus away from the page). Catch it before WebKit and give the
+// page a plain ContextMenu key event instead.
+static gboolean on_key_pressed(GtkEventControllerKey *controller, guint keyval, guint keycode,
+                               GdkModifierType state, gpointer webview) {
+	(void)controller;
+	(void)keycode;
+	(void)state;
+	if (keyval != GDK_KEY_Menu) {
+		return FALSE;
+	}
+	webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(webview),
+		"window.dispatchEvent(new KeyboardEvent('keydown',{key:'ContextMenu',code:'ContextMenu',bubbles:true,cancelable:true}))",
+		-1, NULL, NULL, NULL, NULL, NULL);
+	return TRUE;
+}
+
 int lounge_attach(void *gtk_window, mpv_handle *handle) {
 	if (gl_area != NULL) {
 		return 0;
@@ -134,6 +163,16 @@ int lounge_attach(void *gtk_window, mpv_handle *handle) {
 	GtkWidget *webview = gtk_widget_get_last_child(box);
 	if (webview == NULL || !GTK_IS_BOX(box)) {
 		return -2;
+	}
+
+	if (WEBKIT_IS_WEB_VIEW(webview)) {
+		GtkEventController *keys = gtk_event_controller_key_new();
+		gtk_event_controller_set_propagation_phase(keys, GTK_PHASE_CAPTURE);
+		g_signal_connect(keys, "key-pressed", G_CALLBACK(on_key_pressed), webview);
+		gtk_widget_add_controller(webview, keys);
+		if (!g_getenv("FRONTEND_DEVSERVER_URL")) {
+			g_signal_connect(webview, "context-menu", G_CALLBACK(suppress_context_menu), NULL);
+		}
 	}
 
 	g_object_ref(webview);

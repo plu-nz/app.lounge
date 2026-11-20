@@ -2,7 +2,7 @@
 package player
 
 /*
-#cgo pkg-config: gtk4 mpv epoxy
+#cgo pkg-config: gtk4 webkitgtk-6.0 mpv epoxy
 #include <stdlib.h>
 #include <mpv/client.h>
 #include "render.h"
