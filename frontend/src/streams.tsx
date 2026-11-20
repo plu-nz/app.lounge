@@ -198,8 +198,7 @@ function focusWhenReady(root: () => HTMLElement | undefined) {
 }
 
 /**
- * SourceRows shows sources inline as horizontal rows, one per addon. Back
- * closes it.
+ * SourceRows shows sources inline as horizontal rows, one per addon.
  */
 export function SourceRows(props: {
   type: string;
@@ -207,17 +206,21 @@ export function SourceRows(props: {
   label: JSX.Element;
   selectedKey?: string;
   onPick: (s: Stream, g: StreamGroup) => void;
-  onClose: () => void;
+  /** onClose makes Back close the rows instead of leaving the screen. */
+  onClose?: () => void;
 }) {
   let ref: HTMLElement | undefined;
   const { groups, total, defaultKey } = useStreams(() => props.type, () => props.videoId, () => props.selectedKey);
   focusWhenReady(() => ref);
-  onCleanup(
-    onBack(() => {
-      props.onClose();
-      return true;
-    }),
-  );
+  if (props.onClose) {
+    const close = props.onClose;
+    onCleanup(
+      onBack(() => {
+        close();
+        return true;
+      }),
+    );
+  }
   return (
     <section class="sources" ref={ref} data-nav-block>
       <h2>{props.label}</h2>

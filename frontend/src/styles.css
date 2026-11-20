@@ -5,6 +5,23 @@ html {
   font-size: calc(100vh / 54);
 }
 
+/* Extra accents beyond the shared library's four, from Catppuccin Mocha,
+   which Darkppuccin follows. */
+.plz-theme {
+  --plz-mauve: #cba6f7;
+  --plz-lavender: #b4befe;
+}
+
+.plz-theme[data-plz-accent='mauve'] {
+  --plz-accent: var(--plz-mauve);
+  --plz-focus: var(--plz-mauve);
+}
+
+.plz-theme[data-plz-accent='lavender'] {
+  --plz-accent: var(--plz-lavender);
+  --plz-focus: var(--plz-lavender);
+}
+
 html,
 body {
   margin: 0;

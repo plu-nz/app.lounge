@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createResource, createSignal, For, on, onMount, Show } from 'solid-js';
-import { CircleCheck, List, Play, X } from 'lucide-solid';
+import { CircleCheck, List, X } from 'lucide-solid';
 import { content, library, type Meta, type MetaPreview, type Stream, type StreamGroup, type Video } from '../api';
 import { Backdrop, MetaLine, Spinner, errorText, toast } from '../components';
 import { t } from '../i18n';
@@ -22,21 +22,27 @@ export function episodeLabel(v: Video): string {
   return v.season !== undefined || v.episode !== undefined ? `S${v.season ?? 0} E${v.episode ?? v.number ?? 0}` : '';
 }
 
+function clock(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const sec = Math.floor(seconds % 60);
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}` : `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+/** sourcesLabel names what the source rows will play. */
+function sourcesLabel(pick: Pick): string {
+  const parts = [pick.video ? `${episodeLabel(pick.video)} ${pick.video.name ?? pick.video.title ?? ''}`.trim() : t('streams.title')];
+  if (pick.start > 0) parts.push(`${t('details.resume')} ${clock(pick.start)}`);
+  return parts.join(' · ');
+}
+
 export function Details(props: { type: string; id: string; preview?: MetaPreview; autoplay?: boolean; active: boolean }) {
   const [meta] = createResource(() => content.meta(props.type, props.id).catch((err) => ({ error: errorText(err) }) as Meta & { error: string }));
   const [entry, { refetch: refetchEntry }] = createResource(() => library.get(props.id));
   const [watched, setWatched] = createSignal<Set<string>>(new Set());
   const [season, setSeason] = createSignal<number>();
-  const [picking, setPickingSignal] = createSignal<Pick>();
-  let pickedFrom: HTMLElement | null = null;
-  const setPicking = (pick: Pick | undefined) => {
-    if (pick && !picking()) pickedFrom = document.activeElement as HTMLElement | null;
-    setPickingSignal(pick);
-    if (!pick && pickedFrom?.isConnected) {
-      const back = pickedFrom;
-      queueMicrotask(() => focusEl(back));
-    }
-  };
+  // An episode the user picked; otherwise sources are for next().
+  const [chosen, setChosen] = createSignal<Pick>();
 
   const item = (): Partial<Meta> => ({ ...props.preview, ...(meta() && !('error' in meta()!) ? meta() : {}) });
   const videos = createMemo(() => sortVideos(item().videos));
@@ -60,7 +66,7 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
     loadWatched();
   });
 
-  /** next is what the main button plays. */
+  /** next is what plays by default: the resume point or the first episode. */
   const next = createMemo((): Pick | undefined => {
     const e = entry();
     if (!isSeries()) {
@@ -85,9 +91,15 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
     return { video: v, videoId: v.id, start: 0, label: t('details.playEpisode', { s: v.season ?? 0, e: v.episode ?? v.number ?? 0 }) };
   });
 
+  // Sources load as soon as the title opens; the rows only reload when the
+  // video or the resume point changes.
+  const shown = createMemo(() => chosen() ?? next(), undefined, {
+    equals: (a, b) => a?.videoId === b?.videoId && a?.start === b?.start,
+  });
+
   const play = (pick: Pick, s: Stream, g: StreamGroup) => {
     const m = item();
-    setPicking(undefined);
+    setChosen(undefined);
     push({
       name: 'player',
       play: {
@@ -108,26 +120,19 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
     on([next, entry, () => meta.loading || entry.loading], ([pick, e, loading]) => {
       if (!props.autoplay || loading || !pick || autoplaying()) return;
       setAutoplaying(true);
-      if (!e?.streamKey) return setPicking(pick);
+      if (!e?.streamKey) return;
       content
         .streams(props.type, pick.videoId)
         .then((groups) => {
           const found = findStream(groups, { key: e.streamKey });
           if (found && props.active) play(pick, found.stream, found.group);
-          else setPicking(pick);
         })
-        .catch(() => setPicking(pick));
+        .catch(() => undefined);
     }),
   );
 
+  // The source rows take focus once they load; until then focus the buttons.
   onMount(() => queueMicrotask(() => focusFirst(document.querySelector('.details-head') ?? document)));
-  createEffect(() => {
-    // Focus the main button once it appears.
-    if (next() && props.active && !picking()) {
-      const btn = document.querySelector<HTMLElement>('.details-head [data-nav-default]');
-      if (btn && (document.activeElement === document.body || !document.activeElement)) focusEl(btn);
-    }
-  });
 
   const clearProgress = async () => {
     await library.remove(props.id);
@@ -173,12 +178,9 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
           <Show when={meta() && 'error' in meta()!}>
             <p class="error">{(meta() as unknown as { error: string }).error}</p>
           </Show>
-          <div class="btn-col">
-            <Show when={next()} fallback={<Show when={meta.loading}><Spinner /></Show>}>
-              <button class="btn primary" data-nav data-nav-default onClick={() => setPicking(next())}>
-                <Play />
-                {next()!.label}
-              </button>
+          <div class="btn-row">
+            <Show when={meta.loading}>
+              <Spinner />
             </Show>
             <Show when={isSeries()}>
               <button class="btn" data-nav onClick={openEpisodes}>
@@ -193,19 +195,14 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
               </button>
             </Show>
           </div>
-          <Show when={picking()} keyed>
+          <Show when={shown()} keyed>
             {(pick) => (
               <SourceRows
                 type={props.type}
                 videoId={pick.videoId}
-                label={
-                  pick.video
-                    ? `${t('streams.title')} · ${episodeLabel(pick.video)} ${pick.video.name ?? pick.video.title ?? ''}`
-                    : t('streams.title')
-                }
+                label={sourcesLabel(pick)}
                 selectedKey={entry()?.videoId === pick.videoId ? entry()?.streamKey : undefined}
                 onPick={(s, g) => play(pick, s, g)}
-                onClose={() => setPicking(undefined)}
               />
             )}
           </Show>
@@ -230,7 +227,7 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
                   data-nav
                   data-nav-block
                   onClick={() =>
-                    setPicking({
+                    setChosen({
                       video: v,
                       videoId: v.id,
                       start: entry()?.videoId === v.id && entry()!.position < entry()!.duration * 0.92 ? entry()!.position : 0,

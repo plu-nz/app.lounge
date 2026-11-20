@@ -306,7 +306,7 @@ export function Addons() {
 
 /* Settings ---------------------------------------------------------------- */
 
-const accents = ['blue', 'green', 'orange', 'red'];
+const accents = ['blue', 'mauve', 'lavender', 'green', 'orange', 'red'];
 const mediaLangs = ['', 'por', 'eng', 'spa'];
 const subSizes = [0.8, 1, 1.2, 1.4, 1.6];
 
@@ -392,7 +392,7 @@ export function SettingsPage(props: { active: boolean }) {
         )}
         {item(
           () => t('settings.accent'),
-          () => s().accent,
+          () => t(`accent.${s().accent || 'blue'}` as Parameters<typeof t>[0]),
           () => void updateSettings({ accent: cycle(accents, s().accent || 'blue') }),
         )}
         {item(
