@@ -44,6 +44,8 @@ function App() {
     }
   });
   onMount(() => void loadSettings().catch(() => undefined));
+  // No browser context menu anywhere in the TV UI.
+  addEventListener('contextmenu', (e) => e.preventDefault());
   // LOUNGE_DEBUG=1 logs every key, to map remote control buttons.
   void Call.ByName('main.AppService.Debug').then((debug: boolean) => {
     if (!debug) return;
@@ -52,6 +54,7 @@ function App() {
       (e) => void Call.ByName('main.AppService.Log', `key=${JSON.stringify(e.key)} code=${e.code} keyCode=${e.keyCode}`),
       true,
     );
+    addEventListener('contextmenu', () => void Call.ByName('main.AppService.Log', 'contextmenu event'), true);
   });
 
   // Return focus to where it was when a pushed screen closes.

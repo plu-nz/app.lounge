@@ -124,6 +124,9 @@ func main() {
 		BackgroundType:   application.BackgroundTypeTransparent,
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		DevToolsEnabled:  devRun(),
+		// The remote's Menu key would open WebKit's right-click menu; the
+		// UI uses that key itself.
+		DefaultContextMenuDisabled: !devRun(),
 	})
 	// The runtime becomes ready after every page load; attaching is idempotent.
 	window.OnWindowEvent(events.Common.WindowRuntimeReady, func(*application.WindowEvent) {

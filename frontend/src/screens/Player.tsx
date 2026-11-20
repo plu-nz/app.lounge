@@ -94,6 +94,15 @@ export function Player(props: { play: PlayContext; active: boolean }) {
     document.body.classList.add('mouse-hidden');
   };
 
+  // The Menu key can arrive as a keydown and then a contextmenu event; act once.
+  let lastMenuToggle = 0;
+  const toggleFromMenu = () => {
+    if (performance.now() - lastMenuToggle < 400) return;
+    lastMenuToggle = performance.now();
+    if (visible() && started() && !paused() && !error()) hideControls();
+    else showControls();
+  };
+
   const flash = (text: string) => {
     setOsd(text);
     clearTimeout(osdTimer);
@@ -282,8 +291,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
       if (menuKeys.has(k)) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        if (visible() && started() && !paused() && !error()) hideControls();
-        else showControls();
+        toggleFromMenu();
         return;
       }
       // OK on a bare video pauses and shows the controls together.
@@ -303,6 +311,12 @@ export function Player(props: { play: PlayContext; active: boolean }) {
       if (visible()) showControls(false);
     };
     addEventListener('keydown', onKey, true);
+    // Some remotes only produce the context-menu event for their Menu key.
+    const onContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      if (props.active && !menu()) toggleFromMenu();
+    };
+    addEventListener('contextmenu', onContextMenu, true);
     const onMouse = () => props.active && showControls(false);
     addEventListener('mousemove', onMouse);
 
@@ -323,6 +337,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
     onCleanup(() => {
       offBack();
       removeEventListener('keydown', onKey, true);
+      removeEventListener('contextmenu', onContextMenu, true);
       removeEventListener('mousemove', onMouse);
       clearInterval(saveTimer);
       clearInterval(statusTimer);
