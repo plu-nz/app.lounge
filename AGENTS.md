@@ -21,7 +21,7 @@ The app is one Go binary built with Wails 3. The window is GTK 4 with WebKitGTK 
 - `internal/torrent` wraps `anacrolix/torrent` and serves files over `127.0.0.1` HTTP with range support, so mpv can stream and seek while pieces download.
 - `internal/library` stores watch progress and watched videos. `internal/settings` stores preferences. `internal/store` holds the shared JSON documents in `~/.config/lounge/`.
 - `frontend/src`:
-  - `nav.ts` provides spatial navigation for remotes: `data-nav`, `data-nav-group`, `data-nav-entry`, `data-nav-row`, `data-nav-pane`, `data-nav-scope`, and the back stack;
+  - `nav.ts` provides spatial navigation for remotes: `data-nav`, `data-nav-group`, `data-nav-entry`, `data-nav-row`, `data-nav-pane`, `data-nav-block`, `data-nav-top` (a fraction of the pane, or `nearest`), `data-nav-scope`, and the back stack. It scrolls with its own short animation, because WebKit's smooth scrolling lags behind a held arrow key;
   - `router.ts` is a stack router whose screens stay mounted underneath;
   - `api.ts` holds the typed service calls;
   - `i18n.ts` has the en/pt/es strings;

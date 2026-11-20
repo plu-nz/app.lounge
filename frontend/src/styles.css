@@ -504,6 +504,27 @@ button {
   gap: 1.3rem;
 }
 
+.details-head .description {
+  -webkit-line-clamp: 5;
+}
+
+/* Series fit the title, seasons, and episodes on one screen. */
+.details.series .details-head {
+  min-height: 0;
+  padding-top: 6vh;
+  padding-bottom: 1rem;
+  justify-content: flex-start;
+  gap: 0.9rem;
+}
+
+.details.series .details-head .logo {
+  max-height: 6.5rem;
+}
+
+.details.series .details-head .description {
+  -webkit-line-clamp: 3;
+}
+
 .details-head > :not(.sources) {
   max-width: 56vw;
 }
@@ -560,30 +581,39 @@ button {
   color: var(--plz-bg);
 }
 
-.episodes {
+.episode-track {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  padding: 0.8rem calc(var(--gutter) + 1rem);
-  max-width: 70rem;
+  gap: 1.1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0.6rem var(--gutter) 1rem calc(var(--gutter) + 1rem);
+}
+
+.episode-track::-webkit-scrollbar {
+  display: none;
 }
 
 .episode {
-  display: grid;
-  grid-template-columns: 14rem 1fr;
-  gap: 1.4rem;
-  align-items: center;
-  padding: 0.7rem;
+  flex: none;
+  width: 18rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 0.55rem 0.8rem;
   border: 0;
   border-radius: var(--radius);
-  background: rgba(28, 28, 28, 0.55);
+  background: rgba(28, 28, 28, 0.7);
+  color: var(--plz-text);
   text-align: left;
   cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .episode .thumb {
   position: relative;
   aspect-ratio: 16 / 9;
+  margin-bottom: 0.25rem;
   border-radius: calc(var(--radius) - 0.2rem);
   overflow: hidden;
   background: var(--plz-raised);
@@ -595,35 +625,78 @@ button {
   object-fit: cover;
 }
 
-.episode h3 {
-  margin: 0 0 0.3rem;
-  font-size: 1.1rem;
-  color: var(--plz-text);
+.episode .watched {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.episode h3 svg {
-  width: 1.1rem;
-  height: 1.1rem;
+  padding: 0.2rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
   color: var(--plz-green);
 }
 
-.episode p {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.45;
+.episode .watched svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.episode .progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0.3rem;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.episode .progress i {
+  display: block;
+  height: 100%;
+  background: var(--plz-accent);
+}
+
+.episode-label {
+  padding: 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   color: var(--plz-subtle);
+}
+
+.episode h3 {
+  margin: 0;
+  padding: 0 0.25rem;
+  font-size: 1rem;
+  line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+.episode.chosen {
+  box-shadow: inset 0 -0.22rem 0 var(--plz-accent);
+}
+
 .episode.focused {
-  background: var(--plz-raised);
-  box-shadow: 0 0 0 var(--ring) var(--plz-accent);
+  background: var(--plz-accent);
+  color: var(--plz-bg);
+  transform: scale(1.04);
+  box-shadow: 0 0.6rem 1.6rem rgba(0, 0, 0, 0.5);
+}
+
+.episode.focused .episode-label {
+  color: var(--plz-bg);
+  opacity: 0.75;
+}
+
+.episode-sources {
+  padding: 0 0 0 calc(var(--gutter) + 1rem);
+}
+
+.episode-sources .sources {
+  margin-top: 0;
 }
 
 /* Side panel (streams, tracks) --------------------------------------- */
@@ -1240,7 +1313,9 @@ button {
   gap: 1rem;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 0.6rem var(--gutter) 0.8rem 0;
+  /* Room for the focused card to grow without clipping its left edge. */
+  margin-left: -0.8rem;
+  padding: 0.6rem var(--gutter) 0.8rem 0.8rem;
 }
 
 .source-track::-webkit-scrollbar {

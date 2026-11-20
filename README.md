@@ -14,7 +14,7 @@ Lounge is a Linux TV app for watching content from [Stremio addons](https://gith
 - Home, Movies, and Series screens with catalog rows and a backdrop that follows the focused title.
 - "View all" grids with genre filters, and search across every searchable catalog.
 - Details for movies and series, with seasons, episodes, and watched marks.
-- A source picker that groups streams by addon and shows the quality.
+- Sources in horizontal rows, one per addon, with quality and size. Movies show them when the title opens; series show them after you pick an episode from the horizontal episode row.
 - Direct HTTP streams and BitTorrent streams. Torrents are streamed by an embedded engine, so Stremio Service is not needed.
 - In-window playback through libmpv, with controls over the video:
   - seek and pause;

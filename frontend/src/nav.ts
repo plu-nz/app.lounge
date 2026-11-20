@@ -47,22 +47,65 @@ export function focusEl(el: HTMLElement) {
 
 const lastInGroup = new WeakMap<HTMLElement, HTMLElement>();
 
+// Scroll animations in flight, by element, with their end position.
+const glides = new WeakMap<HTMLElement, { frame: number; to: number }>();
+
+/**
+ * glide scrolls an element quickly. WebKit's smooth scrolling takes too long
+ * to follow a remote whose arrow key is held down.
+ */
+export function glide(el: HTMLElement, axis: 'x' | 'y', to: number) {
+  const prop = axis === 'x' ? 'scrollLeft' : 'scrollTop';
+  const max = axis === 'x' ? el.scrollWidth - el.clientWidth : el.scrollHeight - el.clientHeight;
+  const end = Math.max(0, Math.min(to, max));
+  cancelAnimationFrame(glides.get(el)?.frame ?? 0);
+  glides.delete(el);
+  const from = el[prop];
+  if (Math.abs(end - from) < 1) return;
+  const start = performance.now();
+  const duration = 160;
+  const step = (now: number) => {
+    const t = Math.min(1, (now - start) / duration);
+    el[prop] = from + (end - from) * (1 - (1 - t) ** 3);
+    if (t < 1) glides.set(el, { frame: requestAnimationFrame(step), to: end });
+    else glides.delete(el);
+  };
+  glides.set(el, { frame: requestAnimationFrame(step), to: end });
+}
+
+/** scrollTarget is where an element's scroll will rest once its glide ends. */
+function scrollTarget(el: HTMLElement, axis: 'x' | 'y'): number {
+  return glides.get(el)?.to ?? (axis === 'x' ? el.scrollLeft : el.scrollTop);
+}
+
 function reveal(el: HTMLElement) {
   const row = el.closest<HTMLElement>('[data-nav-row]');
   if (row) {
     const pad = parseFloat(getComputedStyle(row).paddingLeft) || 0;
-    const target = el.offsetLeft - pad;
-    const max = row.scrollWidth - row.clientWidth;
-    row.scrollTo({ left: Math.max(0, Math.min(target, max)), behavior: 'smooth' });
+    glide(row, 'x', el.offsetLeft - pad);
   }
   const pane = el.closest<HTMLElement>('[data-nav-pane]');
   if (pane) {
     const block = el.closest<HTMLElement>('[data-nav-block]') ?? el;
+    // A block, or a container around it, sets where it rests with
+    // data-nav-top: a fraction of the pane height, or "nearest" to scroll
+    // only as far as needed.
+    const top = block.closest<HTMLElement>('[data-nav-top]')?.dataset.navTop ?? '0.18';
     const pr = pane.getBoundingClientRect();
     const br = block.getBoundingClientRect();
-    const top = Number(pane.dataset.navTop ?? 0.18) * pr.height;
-    if (br.top < pr.top + 24 || br.bottom > pr.bottom - 24) {
-      pane.scrollBy({ top: br.top - pr.top - top, behavior: 'smooth' });
+    // Measure against the position a running glide will reach.
+    const pending = scrollTarget(pane, 'y') - pane.scrollTop;
+    const blockTop = br.top - pending;
+    const blockBottom = br.bottom - pending;
+    const margin = 24;
+    if (blockTop < pr.top + margin || blockBottom > pr.bottom - margin) {
+      const delta =
+        top !== 'nearest'
+          ? blockTop - pr.top - Number(top) * pr.height
+          : blockTop < pr.top + margin
+            ? blockTop - pr.top - margin
+            : blockBottom - pr.bottom + margin;
+      glide(pane, 'y', scrollTarget(pane, 'y') + delta);
     }
   } else {
     el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });

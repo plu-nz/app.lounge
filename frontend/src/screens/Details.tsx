@@ -1,13 +1,13 @@
-import { createEffect, createMemo, createResource, createSignal, For, on, onMount, Show } from 'solid-js';
-import { CircleCheck, List, X } from 'lucide-solid';
+import { createEffect, createMemo, createResource, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
+import { CircleCheck, X } from 'lucide-solid';
 import { content, library, type Meta, type MetaPreview, type Stream, type StreamGroup, type Video } from '../api';
 import { Backdrop, MetaLine, Spinner, errorText, toast } from '../components';
 import { t } from '../i18n';
-import { focusEl, focusFirst } from '../nav';
+import { focusEl, focusFirst, glide, onBack } from '../nav';
 import { push } from '../router';
 import { findStream, SourceRows, streamKey, toRequest } from '../streams';
 
-type Pick = { video: Video | null; videoId: string; start: number; label: string };
+type Pick = { video: Video | null; videoId: string; start: number };
 
 export function sortVideos(videos: Video[] = []): Video[] {
   return [...videos].sort((a, b) => {
@@ -41,16 +41,17 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
   const [entry, { refetch: refetchEntry }] = createResource(() => library.get(props.id));
   const [watched, setWatched] = createSignal<Set<string>>(new Set());
   const [season, setSeason] = createSignal<number>();
-  // An episode the user picked; otherwise sources are for next().
+  // The episode whose sources are open. Series pick sources in two steps:
+  // first the episode, then the source.
   const [chosen, setChosen] = createSignal<Pick>();
+  let root: HTMLDivElement | undefined;
+  let body: HTMLDivElement | undefined;
 
   const item = (): Partial<Meta> => ({ ...props.preview, ...(meta() && !('error' in meta()!) ? meta() : {}) });
   const videos = createMemo(() => sortVideos(item().videos));
-  const isSeries = () => videos().length > 0 && props.type !== 'movie';
+  const isSeries = () => props.type === 'series' || (videos().length > 0 && props.type !== 'movie');
   const seasons = createMemo(() => [...new Set(videos().map((v) => v.season ?? 0))]);
   const seasonVideos = createMemo(() => videos().filter((v) => (v.season ?? 0) === season()));
-
-  createEffect(on(() => props.active, (active, was) => active && was === false && (refetchEntry(), loadWatched())));
 
   const loadWatched = async () => {
     const ids = videos().map((v) => v.id);
@@ -66,40 +67,35 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
     loadWatched();
   });
 
+  /** resumeAt is where a video starts: its saved position unless it was finished. */
+  const resumeAt = (videoId: string) => {
+    const e = entry();
+    return e && e.videoId === videoId && e.position > 30 && e.position < e.duration * 0.92 ? e.position : 0;
+  };
+
   /** next is what plays by default: the resume point or the first episode. */
   const next = createMemo((): Pick | undefined => {
-    const e = entry();
-    if (!isSeries()) {
-      const resume = e && e.position > 30 && e.position < e.duration * 0.92;
-      return { video: null, videoId: props.id, start: resume ? e!.position : 0, label: resume ? t('details.resume') : t('details.play') };
-    }
+    if (!isSeries()) return { video: null, videoId: props.id, start: resumeAt(props.id) };
     if (!videos().length) return undefined;
-    if (e) {
-      const i = videos().findIndex((v) => v.id === e.videoId);
-      if (i >= 0) {
-        const done = e.position >= e.duration * 0.92;
-        const v = done ? videos()[i + 1] : videos()[i];
-        if (v) {
-          const vars = { s: v.season ?? 0, e: v.episode ?? v.number ?? 0 };
-          return done
-            ? { video: v, videoId: v.id, start: 0, label: t('details.playEpisode', vars) }
-            : { video: v, videoId: v.id, start: e.position, label: t('details.resumeEpisode', vars) };
-        }
-      }
+    const e = entry();
+    const i = e ? videos().findIndex((v) => v.id === e.videoId) : -1;
+    if (i >= 0) {
+      const done = e!.position >= e!.duration * 0.92;
+      const v = done ? videos()[i + 1] : videos()[i];
+      if (v) return { video: v, videoId: v.id, start: done ? 0 : e!.position };
     }
     const v = videos().find((v) => (v.season ?? 0) > 0) ?? videos()[0];
-    return { video: v, videoId: v.id, start: 0, label: t('details.playEpisode', { s: v.season ?? 0, e: v.episode ?? v.number ?? 0 }) };
+    return { video: v, videoId: v.id, start: 0 };
   });
 
-  // Sources load as soon as the title opens; the rows only reload when the
-  // video or the resume point changes.
-  const shown = createMemo(() => chosen() ?? next(), undefined, {
+  // Movies load their sources as soon as the title opens. The rows reload
+  // only when the resume point changes.
+  const movieSources = createMemo(() => (props.type === 'movie' || (!meta.loading && !isSeries()) ? next() : undefined), undefined, {
     equals: (a, b) => a?.videoId === b?.videoId && a?.start === b?.start,
   });
 
   const play = (pick: Pick, s: Stream, g: StreamGroup) => {
     const m = item();
-    setChosen(undefined);
     push({
       name: 'player',
       play: {
@@ -131,8 +127,67 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
     }),
   );
 
-  // The source rows take focus once they load; until then focus the buttons.
-  onMount(() => queueMicrotask(() => focusFirst(document.querySelector('.details-head') ?? document)));
+  /** focusEpisode shows an episode's season and focuses its card. */
+  const focusEpisode = (videoId?: string) => {
+    const v = videos().find((v) => v.id === videoId);
+    if (v && (v.season ?? 0) !== season()) setSeason(v.season ?? 0);
+    queueMicrotask(() => {
+      const cards = [...(root?.querySelectorAll<HTMLElement>('.episode') ?? [])];
+      const el = cards.find((c) => c.dataset.id === videoId) ?? cards[0];
+      if (el) focusEl(el);
+    });
+  };
+
+  const choose = (v: Video) => {
+    if (chosen()?.videoId === v.id) {
+      const card = root?.querySelector<HTMLElement>('.episode-sources .source:not(:disabled)');
+      if (card) focusEl(card);
+      return;
+    }
+    setChosen({ video: v, videoId: v.id, start: resumeAt(v.id) });
+  };
+
+  const closeSources = () => {
+    const id = chosen()?.videoId;
+    setChosen(undefined);
+    focusEpisode(id);
+    if (body) glide(body, 'y', 0);
+  };
+
+  // Back closes the open sources before it leaves the screen.
+  onCleanup(
+    onBack(() => {
+      if (!props.active || !chosen()) return false;
+      closeSources();
+      return true;
+    }),
+  );
+
+  // Series open on the episode to watch next; movies on their sources.
+  let placed = false;
+  createEffect(() => {
+    if (placed || !props.active || !isSeries() || !seasonVideos().length) return;
+    placed = true;
+    focusEpisode(next()?.videoId);
+  });
+  onMount(() => queueMicrotask(() => !placed && focusFirst(root?.querySelector('.details-head') ?? document)));
+
+  // Coming back from the player: refresh progress, close the sources, and
+  // focus the episode that now comes next.
+  createEffect(
+    on(
+      () => props.active,
+      (active, was) => {
+        if (!active || was !== false) return;
+        loadWatched();
+        const refreshed = Promise.resolve(refetchEntry());
+        if (!isSeries()) return;
+        setChosen(undefined);
+        if (body) glide(body, 'y', 0);
+        void refreshed.then(() => focusEpisode(next()?.videoId));
+      },
+    ),
+  );
 
   const clearProgress = async () => {
     await library.remove(props.id);
@@ -140,26 +195,22 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
     toast(t('details.clearProgress'));
   };
 
-  const openEpisodes = () => {
-    const el =
-      document.querySelector<HTMLElement>('.episode.current') ??
-      document.querySelector<HTMLElement>('.seasons .chip.selected');
-    if (el) focusEl(el);
+  const progress = (v: Video) => {
+    const e = entry();
+    return e && e.videoId === v.id && e.duration > 0 && e.position < e.duration * 0.92 ? e.position / e.duration : 0;
   };
 
   return (
-    <div class="screen details">
+    <div class="screen details" classList={{ series: isSeries() }} ref={root}>
       <Backdrop src={item().background} full />
-      <div class="details-body" data-nav-pane data-nav-top="0.2">
+      <div class="details-body" ref={body} data-nav-pane data-nav-top="0.2">
         <div class="details-head" data-nav-block>
           <Show when={item().logo} fallback={<h1>{item().name}</h1>}>
             <img class="logo" src={item().logo} alt={item().name} />
           </Show>
           <MetaLine item={item()} />
           <Show when={item().description}>
-            <p class="description" style={{ '-webkit-line-clamp': 5 }}>
-              {item().description}
-            </p>
+            <p class="description">{item().description}</p>
           </Show>
           <Show when={item().cast?.length || item().director?.length}>
             <div class="people">
@@ -178,24 +229,20 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
           <Show when={meta() && 'error' in meta()!}>
             <p class="error">{(meta() as unknown as { error: string }).error}</p>
           </Show>
-          <div class="btn-row">
-            <Show when={meta.loading}>
-              <Spinner />
-            </Show>
-            <Show when={isSeries()}>
-              <button class="btn" data-nav onClick={openEpisodes}>
-                <List />
-                {t('details.episodes')}
-              </button>
-            </Show>
-            <Show when={entry()}>
-              <button class="btn" data-nav onClick={clearProgress}>
-                <X />
-                {t('details.clearProgress')}
-              </button>
-            </Show>
-          </div>
-          <Show when={shown()} keyed>
+          <Show when={meta.loading || entry()}>
+            <div class="btn-row">
+              <Show when={meta.loading}>
+                <Spinner />
+              </Show>
+              <Show when={entry()}>
+                <button class="btn" data-nav onClick={clearProgress}>
+                  <X />
+                  {t('details.clearProgress')}
+                </button>
+              </Show>
+            </div>
+          </Show>
+          <Show when={movieSources()} keyed>
             {(pick) => (
               <SourceRows
                 type={props.type}
@@ -208,57 +255,76 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
           </Show>
         </div>
 
-        <Show when={isSeries()}>
-          <div class="seasons" data-nav-row data-nav-group data-nav-block>
+        <Show when={isSeries() && videos().length}>
+          <div class="seasons" data-nav-row data-nav-group data-nav-block data-nav-top="nearest">
             <For each={seasons()}>
               {(s) => (
-                <button class="chip" classList={{ selected: season() === s }} data-nav onClick={() => setSeason(s)} onFocus={() => setSeason(s)}>
+                <button
+                  class="chip"
+                  classList={{ selected: season() === s }}
+                  data-nav
+                  data-nav-entry={season() === s ? '' : undefined}
+                  onClick={() => setSeason(s)}
+                  onFocusIn={() => {
+                    if (season() === s) return;
+                    setSeason(s);
+                    setChosen(undefined);
+                  }}
+                >
                   {s === 0 ? t('details.specials') : t('details.season', { n: s })}
                 </button>
               )}
             </For>
           </div>
-          <div class="episodes" data-nav-group>
+          <div class="episode-track" data-nav-row data-nav-group data-nav-block data-nav-top="nearest">
             <For each={seasonVideos()}>
               {(v) => (
                 <button
                   class="episode"
-                  classList={{ current: entry()?.videoId === v.id }}
+                  classList={{ chosen: chosen()?.videoId === v.id }}
+                  data-id={v.id}
                   data-nav
-                  data-nav-block
-                  onClick={() =>
-                    setChosen({
-                      video: v,
-                      videoId: v.id,
-                      start: entry()?.videoId === v.id && entry()!.position < entry()!.duration * 0.92 ? entry()!.position : 0,
-                      label: episodeLabel(v),
-                    })
-                  }
+                  data-nav-entry={chosen()?.videoId === v.id ? '' : undefined}
+                  onClick={() => choose(v)}
                 >
                   <div class="thumb">
                     <Show when={v.thumbnail}>
                       <img src={v.thumbnail} loading="lazy" alt="" />
                     </Show>
-                  </div>
-                  <div>
-                    <h3>
-                      {(v.episode ?? v.number) !== undefined ? `${v.episode ?? v.number}. ` : ''}
-                      {v.name ?? v.title ?? t('details.episode', { n: v.episode ?? 0 })}
-                      <Show when={watched().has(v.id)}>
+                    <Show when={watched().has(v.id)}>
+                      <span class="watched">
                         <CircleCheck aria-label={t('details.watched')} />
-                      </Show>
-                    </h3>
-                    <Show when={v.overview}>
-                      <p>{v.overview}</p>
+                      </span>
+                    </Show>
+                    <Show when={progress(v)}>
+                      {(p) => (
+                        <div class="progress">
+                          <i style={{ width: `${p() * 100}%` }} />
+                        </div>
+                      )}
                     </Show>
                   </div>
+                  <div class="episode-label">{episodeLabel(v)}</div>
+                  <h3>{v.name ?? v.title ?? t('details.episode', { n: v.episode ?? v.number ?? 0 })}</h3>
                 </button>
               )}
             </For>
           </div>
+          <Show when={chosen()} keyed>
+            {(pick) => (
+              <div class="episode-sources" data-nav-top="0.5">
+                <SourceRows
+                  type={props.type}
+                  videoId={pick.videoId}
+                  label={sourcesLabel(pick)}
+                  selectedKey={entry()?.videoId === pick.videoId ? entry()?.streamKey : undefined}
+                  onPick={(s, g) => play(pick, s, g)}
+                />
+              </div>
+            )}
+          </Show>
         </Show>
       </div>
-
     </div>
   );
 }
