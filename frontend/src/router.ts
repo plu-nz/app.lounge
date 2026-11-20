@@ -6,6 +6,7 @@ export type Route =
   | { name: 'search' }
   | { name: 'addons' }
   | { name: 'settings' }
+  | { name: 'login' }
   | { name: 'grid'; addonId: string; type: string; catalogId: string; title: string; genres?: string[] }
   | { name: 'details'; type: string; id: string; preview?: MetaPreview; autoplay?: boolean }
   | { name: 'player'; play: PlayContext };

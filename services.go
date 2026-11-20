@@ -64,6 +64,9 @@ type AddonService struct {
 // List returns installed addons in order.
 func (s *AddonService) List() []stremio.Addon { return s.addons.List() }
 
+// Managed reports whether a Stremio account owns the addon list.
+func (s *AddonService) Managed() bool { return s.addons.Managed() }
+
 // Install adds an addon from its manifest URL.
 func (s *AddonService) Install(url string) (stremio.Addon, error) {
 	ctx, cancel := timeout(20 * time.Second)

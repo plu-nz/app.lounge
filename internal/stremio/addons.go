@@ -2,8 +2,10 @@ package stremio
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"slices"
 	"sync"
 
@@ -28,9 +30,13 @@ type Addons struct {
 	client *Client
 	store  *store.Store
 
-	mu   sync.RWMutex
-	list []Addon
+	mu      sync.RWMutex
+	list    []Addon
+	managed bool
 }
+
+// ErrManaged is returned when a change must be made in the Stremio account.
+var ErrManaged = errors.New("addons are managed by your Stremio account; change them in Stremio and sync")
 
 const addonsDoc = "addons"
 
@@ -43,7 +49,7 @@ func LoadAddons(ctx context.Context, client *Client, st *store.Store) (*Addons, 
 	}
 	if !ok {
 		for _, u := range DefaultAddons {
-			if _, err := a.Install(ctx, u); err != nil {
+			if _, err := a.install(ctx, u); err != nil {
 				// Offline first runs still start; defaults can be added later.
 				continue
 			}
@@ -83,8 +89,59 @@ func (a *Addons) Get(id string) (Addon, bool) {
 	return a.list[i], true
 }
 
+// SetManaged marks the collection as mirrored from a Stremio account, which
+// blocks local installs, removals, and reordering.
+func (a *Addons) SetManaged(managed bool) {
+	a.mu.Lock()
+	a.managed = managed
+	a.mu.Unlock()
+}
+
+// Managed reports whether a Stremio account owns the collection.
+func (a *Addons) Managed() bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.managed
+}
+
+// ReplaceFromAccount mirrors an account's collection, keeping each addon's
+// local enabled state. Addons served by a local Stremio Service are
+// skipped because Lounge does not run one.
+func (a *Addons) ReplaceFromAccount(descs []Descriptor) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	next := make([]Addon, 0, len(descs))
+	for _, d := range descs {
+		u, err := url.Parse(d.TransportURL)
+		if err != nil || u.Port() == "11470" {
+			continue
+		}
+		var m Manifest
+		if err := json.Unmarshal(d.Manifest, &m); err != nil || m.ID == "" {
+			continue
+		}
+		if slices.ContainsFunc(next, func(ad Addon) bool { return ad.Manifest.ID == m.ID }) {
+			continue
+		}
+		enabled := true
+		if i := a.index(m.ID); i >= 0 {
+			enabled = a.list[i].Enabled
+		}
+		next = append(next, Addon{TransportURL: d.TransportURL, Manifest: m, Enabled: enabled})
+	}
+	a.list = next
+	return a.saveLocked()
+}
+
 // Install fetches a manifest and adds or updates the addon.
 func (a *Addons) Install(ctx context.Context, rawURL string) (Addon, error) {
+	if a.Managed() {
+		return Addon{}, ErrManaged
+	}
+	return a.install(ctx, rawURL)
+}
+
+func (a *Addons) install(ctx context.Context, rawURL string) (Addon, error) {
 	u, err := NormalizeURL(rawURL)
 	if err != nil {
 		return Addon{}, err
@@ -108,6 +165,9 @@ func (a *Addons) Install(ctx context.Context, rawURL string) (Addon, error) {
 
 // Remove uninstalls an addon.
 func (a *Addons) Remove(id string) error {
+	if a.Managed() {
+		return ErrManaged
+	}
 	return a.update(id, func(i int) { a.list = slices.Delete(a.list, i, i+1) })
 }
 
@@ -118,6 +178,9 @@ func (a *Addons) SetEnabled(id string, enabled bool) error {
 
 // Move shifts an addon up (negative delta) or down in the order.
 func (a *Addons) Move(id string, delta int) error {
+	if a.Managed() {
+		return ErrManaged
+	}
 	return a.update(id, func(i int) {
 		j := min(max(i+delta, 0), len(a.list)-1)
 		ad := a.list[i]
@@ -130,7 +193,7 @@ func (a *Addons) Move(id string, delta int) error {
 func (a *Addons) Refresh(ctx context.Context) error {
 	var errs []error
 	for _, ad := range a.List() {
-		if _, err := a.Install(ctx, ad.TransportURL); err != nil {
+		if _, err := a.install(ctx, ad.TransportURL); err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", ad.Manifest.Name, err))
 		}
 	}

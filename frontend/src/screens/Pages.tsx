@@ -1,9 +1,9 @@
 import { createEffect, createResource, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
-import { ArrowDown, ArrowUp, Delete, Maximize, Plus, Power, RefreshCw, Trash2 } from 'lucide-solid';
+import { ArrowDown, ArrowUp, Delete, LogIn, LogOut, Maximize, Plus, Power, RefreshCw, Trash2, UserRound } from 'lucide-solid';
 import { Window, Application } from '@wailsio/runtime';
-import { addons, content, type Addon, type MetaPreview } from '../api';
+import { account, addons, addonsVersion, content, type Addon, type MetaPreview } from '../api';
 import { Card, errorText, Spinner, toast } from '../components';
-import { languageNames, languages, t, typeName } from '../i18n';
+import { lang, languageNames, languages, t, typeName } from '../i18n';
 import { focusEl, focusFirst } from '../nav';
 import { push } from '../router';
 import { settings, updateSettings } from '../settings';
@@ -184,7 +184,18 @@ export function Grid(props: { addonId: string; type: string; catalogId: string; 
 /* Addons ------------------------------------------------------------------ */
 
 export function Addons() {
-  const [list, { refetch, mutate }] = createResource(addons.list);
+  const [list, { refetch, mutate }] = createResource(() => addonsVersion() + 1, () => addons.list());
+  const [managed, { refetch: refetchManaged }] = createResource(() => addonsVersion() + 1, () => addons.managed());
+  const sync = async (el: HTMLElement) => {
+    try {
+      await account.sync();
+      toast(t('account.synced'));
+      refetchManaged();
+      if (el.isConnected) focusEl(el);
+    } catch (err) {
+      toast(errorText(err));
+    }
+  };
   const [url, setUrl] = createSignal('');
   const [busy, setBusy] = createSignal(false);
 
@@ -217,6 +228,16 @@ export function Addons() {
   return (
     <div class="page" data-nav-pane>
       <h1>{t('addons.title')}</h1>
+      <Show when={managed()}>
+        <p class="notice" style={{ 'margin-bottom': '1rem' }}>{t('account.managed')}</p>
+        <div class="btn-row" style={{ 'margin-bottom': '1.6rem' }} data-nav-block>
+          <button class="btn primary" data-nav data-nav-default onClick={(e) => void sync(e.currentTarget)}>
+            <RefreshCw />
+            {t('account.syncNow')}
+          </button>
+        </div>
+      </Show>
+      <Show when={managed() === false}>
       <div class="btn-row" style={{ 'margin-bottom': '1.6rem', 'flex-wrap': 'nowrap' }} data-nav-block>
         <input
           class="field"
@@ -237,6 +258,7 @@ export function Addons() {
           {t('addons.refresh')}
         </button>
       </div>
+      </Show>
       <For each={list()}>
         {(ad: Addon, i) => (
           <div class="addon" classList={{ disabled: !ad.enabled }} data-nav-block>
@@ -257,6 +279,7 @@ export function Addons() {
               <button class="btn small" data-nav onClick={(e) => run(() => addons.setEnabled(ad.manifest.id, !ad.enabled), e.currentTarget)}>
                 {ad.enabled ? t('addons.disable') : t('addons.enable')}
               </button>
+              <Show when={!managed()}>
               <button class="btn small icon" data-nav disabled={i() === 0} aria-label={t('addons.up')} onClick={(e) => run(() => addons.move(ad.manifest.id, -1), e.currentTarget)}>
                 <ArrowUp />
               </button>
@@ -272,6 +295,7 @@ export function Addons() {
               <button class="btn small icon" data-nav aria-label={t('addons.remove')} onClick={() => run(() => addons.remove(ad.manifest.id))}>
                 <Trash2 />
               </button>
+              </Show>
             </div>
           </div>
         )}
@@ -295,9 +319,31 @@ function langLabel(code: string) {
   return { por: 'Português', eng: 'English', spa: 'Español' }[code] ?? code;
 }
 
-export function SettingsPage() {
+export function SettingsPage(props: { active: boolean }) {
   onMount(() => queueMicrotask(() => focusFirst(document.querySelector('.settings-list') ?? document)));
   const s = settings;
+  const [status, { refetch, mutate }] = createResource(() => props.active, () => account.status());
+  const syncedLabel = () => {
+    const at = status()?.syncedAt;
+    return at ? new Date(at).toLocaleString(lang()) : t('account.never');
+  };
+  const syncNow = async () => {
+    try {
+      mutate(await account.sync());
+      toast(t('account.synced'));
+    } catch (err) {
+      toast(errorText(err));
+      refetch();
+    }
+  };
+  const signOut = async () => {
+    try {
+      await account.logout();
+    } catch (err) {
+      toast(errorText(err));
+    }
+    refetch();
+  };
   const langPref = ['', ...languages];
   const item = (label: () => string, value: () => string, onClick: () => void, first = false) => (
     <button class="setting" data-nav data-nav-default={first ? '' : undefined} onClick={onClick}>
@@ -309,11 +355,40 @@ export function SettingsPage() {
     <div class="page" data-nav-pane>
       <h1>{t('settings.title')}</h1>
       <div class="settings-list">
+        <Show
+          when={status()?.signedIn}
+          fallback={
+            <button class="setting" data-nav data-nav-default onClick={() => push({ name: 'login' })}>
+              <span>{t('account.title')}</span>
+              <span style={{ display: 'flex', gap: '0.6rem', 'align-items': 'center' }}>
+                <LogIn />
+                {t('account.signIn')}
+              </span>
+            </button>
+          }
+        >
+          <div class="setting" style={{ cursor: 'default' }}>
+            <span style={{ display: 'flex', gap: '0.8rem', 'align-items': 'center' }}>
+              <UserRound />
+              {t('account.signedInAs', { email: status()!.email || 'Stremio' })}
+            </span>
+            <span style={{ color: status()?.error ? 'var(--plz-red)' : undefined, 'font-weight': 500, 'font-size': '0.9rem' }}>
+              {status()?.error || t('account.syncedAt', { time: syncedLabel() })}
+            </span>
+          </div>
+          <button class="setting" data-nav data-nav-default onClick={() => void syncNow()}>
+            <span>{t('account.syncNow')}</span>
+            <RefreshCw />
+          </button>
+          <button class="setting" data-nav onClick={() => void signOut()}>
+            <span>{t('account.signOut')}</span>
+            <LogOut />
+          </button>
+        </Show>
         {item(
           () => t('settings.language'),
           () => (s().language ? languageNames[s().language] : t('settings.system')),
           () => void updateSettings({ language: cycle(langPref, s().language) }),
-          true,
         )}
         {item(
           () => t('settings.accent'),

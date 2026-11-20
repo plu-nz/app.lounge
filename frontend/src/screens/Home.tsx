@@ -1,5 +1,5 @@
 import { createEffect, createResource, createSignal, For, on, Show } from 'solid-js';
-import { content, library, type Entry, type MetaPreview, type Row } from '../api';
+import { addonsVersion, content, library, type Entry, type MetaPreview, type Row } from '../api';
 import { Backdrop, Card, MetaLine, MoreCard } from '../components';
 import { t, typeName } from '../i18n';
 import { focusFirst } from '../nav';
@@ -9,7 +9,7 @@ const rowLimit = 24;
 
 export function Home(props: { type: '' | 'movie' | 'series'; active: boolean }) {
   const [focused, setFocused] = createSignal<MetaPreview>();
-  const [rows] = createResource(() => props.type, (type) => content.rows(type));
+  const [rows] = createResource(() => [props.type, addonsVersion()] as const, ([type]) => content.rows(type));
   const [resume, { refetch }] = createResource(async () => {
     const list = await library.continueWatching();
     return props.type ? list.filter((e) => e.type === props.type) : list;
@@ -18,13 +18,20 @@ export function Home(props: { type: '' | 'movie' | 'series'; active: boolean }) 
   // Refresh progress whenever the screen comes back into view.
   createEffect(on(() => props.active, (active, was) => active && was === false && refetch()));
 
+  // Focus the first card once one renders, unless the user already moved.
   let focusedOnce = false;
   const ready = () => {
     if (focusedOnce || !props.active) return;
-    focusedOnce = true;
-    if (!document.activeElement || document.activeElement === document.body) {
-      queueMicrotask(() => focusFirst(document.querySelector('.home-pane') ?? document));
-    }
+    setTimeout(() => {
+      if (focusedOnce) return;
+      const active = document.activeElement;
+      if (active && active !== document.body) {
+        focusedOnce = true;
+        return;
+      }
+      focusFirst(document.querySelector('.home-pane') ?? document);
+      focusedOnce = document.activeElement !== document.body;
+    });
   };
 
   // Before anything is focused, the hero shows the first catalog item.

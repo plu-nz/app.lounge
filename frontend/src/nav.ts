@@ -145,7 +145,7 @@ export function back() {
 const backKeys = new Set(['Escape', 'GoBack', 'BrowserBack', 'XF86Back', 'Back']);
 
 function isTextInput(el: Element | null): el is HTMLInputElement {
-  return el instanceof HTMLInputElement && ['text', 'search', 'url'].includes(el.type);
+  return el instanceof HTMLInputElement && ['text', 'search', 'url', 'email', 'password'].includes(el.type);
 }
 
 let marked: HTMLElement | null = null;

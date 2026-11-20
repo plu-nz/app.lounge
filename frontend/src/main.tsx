@@ -10,6 +10,7 @@ import { Details } from './screens/Details';
 import { Home } from './screens/Home';
 import { Addons, Grid, Search, SettingsPage } from './screens/Pages';
 import { Player } from './screens/Player';
+import { Login } from './screens/Login';
 
 function Screen(props: { route: Route; active: boolean }) {
   const r = props.route;
@@ -21,7 +22,9 @@ function Screen(props: { route: Route; active: boolean }) {
     case 'addons':
       return <Addons />;
     case 'settings':
-      return <SettingsPage />;
+      return <SettingsPage active={props.active} />;
+    case 'login':
+      return <Login />;
     case 'grid':
       return <Grid {...r} />;
     case 'details':

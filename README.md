@@ -7,6 +7,10 @@ Lounge is a Linux TV app for watching content from [Stremio addons](https://gith
 ## Features
 
 - Install, enable, reorder, and remove Stremio addons by URL. Cinemeta and OpenSubtitles v3 are installed on first launch.
+- Sign in with a Stremio account, either with a QR code or code confirmed on a phone, or with email and password. While signed in:
+  - the addon list mirrors the account's collection, synced at sign-in, at every launch, and on demand;
+  - the list is read-only in Lounge, so the account is never changed;
+  - only the auth key is stored, in `~/.config/lounge/account.json`.
 - Home, Movies, and Series screens with catalog rows and a backdrop that follows the focused title.
 - "View all" grids with genre filters, and search across every searchable catalog.
 - Details for movies and series, with seasons, episodes, and watched marks.

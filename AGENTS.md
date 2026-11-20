@@ -17,6 +17,7 @@ The app is one Go binary built with Wails 3. The window is GTK 4 with WebKitGTK 
   - manifests, catalogs, meta, streams, and subtitles;
   - the installed addon list;
   - queries that fan out across the enabled addons.
+  - Stremio account calls: `api.strem.io/api/` for login and addonCollectionGet, and `link.stremio.com/api/v2/` for code sign-in. `account_service.go` mirrors the account's addons, read-only, into the local list.
 - `internal/torrent` wraps `anacrolix/torrent` and serves files over `127.0.0.1` HTTP with range support, so mpv can stream and seek while pieces download.
 - `internal/library` stores watch progress and watched videos. `internal/settings` stores preferences. `internal/store` holds the shared JSON documents in `~/.config/lounge/`.
 - `frontend/src`:

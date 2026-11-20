@@ -76,3 +76,13 @@ func (s *Store) Save(name string, v any) error {
 }
 
 func (s *Store) path(name string) string { return filepath.Join(s.dir, name+".json") }
+
+// Delete removes a document; a missing document is not an error.
+func (s *Store) Delete(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := os.Remove(s.path(name)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
+}

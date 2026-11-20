@@ -1,3 +1,4 @@
+import { createSignal } from 'solid-js';
 import { Call, Events } from '@wailsio/runtime';
 
 const call = <T>(method: string, ...args: unknown[]) => Call.ByName(`main.${method}`, ...args) as Promise<T>;
@@ -136,8 +137,14 @@ export const content = {
   subtitles: (type: string, id: string) => call<Subtitle[] | null>('ContentService.Subtitles', type, id).then((r) => r ?? []),
 };
 
+// addonsVersion changes whenever the addon list is replaced by an account sync.
+const [addonsVersion, setAddonsVersion] = createSignal(0);
+export { addonsVersion };
+Events.On('addons', () => setAddonsVersion((v) => v + 1));
+
 export const addons = {
   list: () => call<Addon[] | null>('AddonService.List').then((r) => r ?? []),
+  managed: () => call<boolean>('AddonService.Managed'),
   install: (url: string) => call<Addon>('AddonService.Install', url),
   remove: (id: string) => call<void>('AddonService.Remove', id),
   setEnabled: (id: string, enabled: boolean) => call<void>('AddonService.SetEnabled', id, enabled),
@@ -168,4 +175,16 @@ export const player = {
   stop: () => call<void>('PlayerService.Stop'),
   torrentStatus: (hash: string) => call<TorrentStatus | null>('PlayerService.TorrentStatus', hash),
   on: (fn: (e: PlayerEvent) => void) => Events.On('player', (ev: { data: PlayerEvent }) => fn(ev.data)),
+};
+
+export type AccountStatus = { signedIn: boolean; email: string; syncedAt: number; error?: string };
+export type LinkCode = { code: string; link: string; qrcode: string };
+
+export const account = {
+  status: () => call<AccountStatus>('AccountService.Status'),
+  login: (email: string, password: string) => call<AccountStatus>('AccountService.Login', email, password),
+  createLink: () => call<LinkCode>('AccountService.CreateLink'),
+  checkLink: (code: string) => call<AccountStatus>('AccountService.CheckLink', code),
+  logout: () => call<void>('AccountService.Logout'),
+  sync: () => call<AccountStatus>('AccountService.Sync'),
 };

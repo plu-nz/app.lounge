@@ -45,6 +45,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("addons: %v", err)
 	}
+	account, err := newAccountService(client, addons, st)
+	if err != nil {
+		log.Fatalf("account: %v", err)
+	}
 	cacheDir, _ := os.UserCacheDir()
 	torrents, err := torrent.Start(filepath.Join(cacheDir, "lounge"))
 	if err != nil {
@@ -78,6 +82,7 @@ func main() {
 			application.NewService(&AddonService{addons: addons}),
 			application.NewService(&LibraryService{library: lib}),
 			application.NewService(&SettingsService{settings: prefs}),
+			application.NewService(account),
 		},
 		OnShutdown: func() {
 			application.InvokeSync(video.Detach)
@@ -87,6 +92,16 @@ func main() {
 			}
 		},
 	})
+
+	// A signed-in account's addons are mirrored on every launch.
+	account.changed = func() { app.Event.Emit("addons") }
+	if account.Status().SignedIn {
+		go func() {
+			if _, err := account.Sync(); err != nil {
+				log.Printf("stremio sync: %v", err)
+			}
+		}()
+	}
 
 	start := application.WindowStateFullscreen
 	if devRun() || os.Getenv("LOUNGE_WINDOWED") != "" {
