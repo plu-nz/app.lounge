@@ -55,7 +55,7 @@ UI changes need a check in the real window, not only type checks. On Hyprland yo
 
 1. Create a headless output: `hyprctl output create headless`.
 2. Launch the app on its workspace with `hl.dsp.exec_cmd(cmd, { workspace = '<n> silent' })`.
-3. Send keys to the window with `hl.dsp.send_key_state({ ..., window = 'class:nz.plu.lounge' })`.
+3. Send keys to the window with `hl.dsp.send_key_state({ ..., window = 'pid:<test pid>' })`. Target it by PID: matching by class would also hit an installed Lounge the user has open.
 4. Capture the result with `grim -o <output>`.
 
 Use a separate `XDG_CONFIG_HOME` so tests do not change the user's addons or progress.
