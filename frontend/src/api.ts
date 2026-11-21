@@ -201,7 +201,16 @@ export const player = {
   on: (fn: (e: PlayerEvent) => void) => Events.On('player', (ev: { data: PlayerEvent }) => fn(ev.data)),
 };
 
-export type AccountStatus = { signedIn: boolean; email: string; syncedAt: number; error?: string };
+export type AccountStatus = {
+  signedIn: boolean;
+  email: string;
+  syncedAt: number;
+  error?: string;
+  librarySyncedAt: number;
+  libraryPulled: number;
+  libraryPushed: number;
+  libraryError?: string;
+};
 export type LinkCode = { code: string; link: string; qrcode: string };
 
 export const account = {

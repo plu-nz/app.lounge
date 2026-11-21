@@ -331,6 +331,16 @@ export function SettingsPage(props: { active: boolean }) {
     const at = status()?.syncedAt;
     return at ? new Date(at).toLocaleString(lang()) : t('account.never');
   };
+  const libraryLine = () => {
+    const st = status();
+    if (st?.libraryError) return st.libraryError;
+    if (!st?.librarySyncedAt) return t('account.never');
+    return t('account.libraryStatus', {
+      time: new Date(st.librarySyncedAt).toLocaleString(lang()),
+      pulled: String(st.libraryPulled),
+      pushed: String(st.libraryPushed),
+    });
+  };
   const syncNow = async () => {
     try {
       mutate(await account.sync());
@@ -378,6 +388,12 @@ export function SettingsPage(props: { active: boolean }) {
             </span>
             <span style={{ color: status()?.error ? 'var(--plz-red)' : undefined, 'font-weight': 500, 'font-size': '0.9rem' }}>
               {status()?.error || t('account.syncedAt', { time: syncedLabel() })}
+            </span>
+          </div>
+          <div class="setting" style={{ cursor: 'default' }}>
+            <span>{t('account.library')}</span>
+            <span style={{ color: status()?.libraryError ? 'var(--plz-red)' : undefined, 'font-weight': 500, 'font-size': '0.9rem' }}>
+              {libraryLine()}
             </span>
           </div>
           <button class="setting" data-nav data-nav-default onClick={() => void syncNow()}>

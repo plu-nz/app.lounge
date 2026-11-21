@@ -52,7 +52,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("addons: %v", err)
 	}
-	account, err := newAccountService(client, addons, st)
+	account, err := newAccountService(client, addons, lib, st)
 	if err != nil {
 		log.Fatalf("account: %v", err)
 	}
@@ -105,6 +105,7 @@ func main() {
 
 	// A signed-in account's addons are mirrored on every launch.
 	account.changed = func() { app.Event.Emit("addons") }
+	account.libraryChanged = func() { app.Event.Emit("library") }
 	if account.Status().SignedIn {
 		go func() {
 			if _, err := account.Sync(); err != nil {
