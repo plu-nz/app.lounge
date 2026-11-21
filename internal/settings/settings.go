@@ -14,6 +14,9 @@ type Settings struct {
 	// AudioLanguages and SubtitleLanguages are ISO 639-2 codes in priority order.
 	AudioLanguages    []string `json:"audioLanguages"`
 	SubtitleLanguages []string `json:"subtitleLanguages"`
+	// SubtitleMode is "on" (use the preferred language), "off", or "auto"
+	// (only when the audio is not in the preferred language). Empty means "on".
+	SubtitleMode string `json:"subtitleMode"`
 	// SubtitleScale multiplies the subtitle size.
 	SubtitleScale float64 `json:"subtitleScale"`
 	// AutoplayNext starts the next episode when one ends.
