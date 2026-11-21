@@ -5,6 +5,7 @@ go 1.27.3
 require (
 	github.com/anacrolix/log v0.17.1-0.20251118025802-918f1157b7bb
 	github.com/anacrolix/torrent v1.63.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/wailsapp/wails/v3 v3.0.0
 )
 

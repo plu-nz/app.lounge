@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Lounge</title>
+<style>
+:root{--bg:#f6f6f8;--fg:#1b1b20;--mut:#62626e;--card:#fff;--line:#d7d7df;--acc:#4f6bed;--ok:#1a7f3c;--err:#c0262d}
+@media (prefers-color-scheme:dark){:root{--bg:#121216;--fg:#ececf1;--mut:#9a9aa8;--card:#1c1c22;--line:#34343d;--acc:#8aa0ff;--ok:#5fd183;--err:#ff7b80}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,sans-serif}
+main{width:100%;max-width:28rem;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+h1{margin:0 0 4px;font-size:1.3rem}
+p{margin:0 0 16px;color:var(--mut)}
+input{width:100%;padding:12px;font-size:1rem;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg)}
+input:focus{outline:2px solid var(--acc);border-color:transparent}
+button{margin-top:12px;width:100%;padding:12px;font-size:1rem;font-weight:600;border:0;border-radius:10px;background:var(--acc);color:#fff}
+@media (prefers-color-scheme:dark){button{color:#111}}
+button:disabled{opacity:.5}
+#msg{margin-top:14px;min-height:1.4em;font-weight:600}
+.ok{color:var(--ok)}.err{color:var(--err)}
+</style>
+</head>
+<body>
+<main>
+<h1 id="h">Add an addon</h1>
+<p id="d">Paste the addon's manifest link. stremio:// links work too.</p>
+<form id="f">
+<input id="u" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="https://…/manifest.json" required>
+<button id="b" type="submit">Send to TV</button>
+</form>
+<div id="msg" role="status"></div>
+</main>
+<script>
+(function(){
+var L={
+en:{h:'Add an addon',d:"Paste the addon's manifest link. stremio:// links work too.",b:'Send to TV',w:'Checking…',ok:'Installed {n}. You can close this page.',e:'Could not reach Lounge.',gone:'This session ended. Open Add from phone again on the TV.'},
+pt:{h:'Adicionar um addon',d:'Cole o link do manifest do addon. Links stremio:// também funcionam.',b:'Enviar para a TV',w:'Verificando…',ok:'{n} instalado. Você pode fechar esta página.',e:'Não foi possível falar com o Lounge.',gone:'Esta sessão terminou. Abra Adicionar pelo celular de novo na TV.'},
+es:{h:'Añadir un addon',d:'Pega el enlace del manifest del addon. Los enlaces stremio:// también sirven.',b:'Enviar a la TV',w:'Comprobando…',ok:'{n} instalado. Puedes cerrar esta página.',e:'No se pudo contactar con Lounge.',gone:'Esta sesión terminó. Abre Añadir desde el teléfono otra vez en la TV.'}
+};
+var s=L[(navigator.language||'en').slice(0,2)]||L.en;
+var $=function(i){return document.getElementById(i)};
+$('h').textContent=s.h;$('d').textContent=s.d;$('b').textContent=s.b;
+var m=$('msg'),b=$('b');
+function say(t,c){m.textContent=t;m.className=c||''}
+$('f').addEventListener('submit',function(ev){
+ev.preventDefault();
+b.disabled=true;say(s.w);
+fetch('add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:$('u').value.trim()})})
+.then(function(r){return r.json().catch(function(){return{}}).then(function(j){return{st:r.status,j:j}})})
+.then(function(x){
+if(x.j.ok){say(s.ok.replace('{n}',x.j.name||''),'ok');return}
+if(x.st===410||x.st===404){say(s.gone,'err');return}
+say(x.j.error||s.e,'err');b.disabled=false;
+})
+.catch(function(){say(s.e,'err');b.disabled=false});
+});
+})();
+</script>
+</body>
+</html>
