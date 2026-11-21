@@ -279,3 +279,15 @@ export const account = {
   logout: () => call<void>('AccountService.Logout'),
   sync: () => call<AccountStatus>('AccountService.Sync'),
 };
+
+export type Profile = { id: string; name: string; hue: number };
+
+export const profiles = {
+  list: () => call<Profile[]>('ProfileService.List'),
+  active: () => call<Profile>('ProfileService.Active'),
+  needsPicker: () => call<boolean>('ProfileService.NeedsPicker'),
+  switch: (id: string) => call<void>('ProfileService.Switch', id),
+  create: (name: string) => call<Profile>('ProfileService.Create', name),
+  rename: (id: string, name: string) => call<void>('ProfileService.Rename', id, name),
+  remove: (id: string) => call<void>('ProfileService.Delete', id),
+};

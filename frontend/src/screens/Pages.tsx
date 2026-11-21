@@ -1,7 +1,8 @@
 import { createEffect, createResource, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
 import { ArrowDown, ArrowUp, Delete, LogIn, LogOut, Maximize, Plus, Power, Smartphone, RefreshCw, Trash2, UserRound } from 'lucide-solid';
 import { Window, Application } from '@wailsio/runtime';
-import { account, addons, addonsVersion, cacheApi, content, type Addon, type MetaPreview } from '../api';
+import { account, addons, addonsVersion, cacheApi, content, profiles, type Addon, type MetaPreview } from '../api';
+import { openProfilePicker } from './Profiles';
 import { Card, errorText, Spinner, toast } from '../components';
 import { PhonePanel } from './PhonePanel';
 import { lang, languageNames, languages, t, typeName } from '../i18n';
@@ -359,6 +360,7 @@ export function SettingsPage(props: { active: boolean }) {
   const accents = () => (followsGtk() ? ['theme', ...namedAccents] : namedAccents);
   const accent = () => (accents().includes(s().accent) ? s().accent : 'blue');
   const [status, { refetch, mutate }] = createResource(() => props.active, () => account.status());
+  const [activeProfile] = createResource(() => props.active, () => profiles.active());
   const syncedLabel = () => {
     const at = status()?.syncedAt;
     return at ? new Date(at).toLocaleString(lang()) : t('account.never');
@@ -458,6 +460,16 @@ export function SettingsPage(props: { active: boolean }) {
             <LogOut />
           </button>
         </Show>
+        {item(
+          () => t('profiles.title'),
+          () => activeProfile()?.name ?? '',
+          () => push({ name: 'profiles' }),
+        )}
+        {item(
+          () => t('profiles.switch'),
+          () => '',
+          () => openProfilePicker(),
+        )}
         {item(
           () => t('settings.language'),
           () => (s().language ? languageNames[s().language] : t('settings.system')),

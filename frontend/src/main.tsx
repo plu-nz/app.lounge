@@ -11,6 +11,7 @@ import { Home } from './screens/Home';
 import { Addons, Grid, Search, SettingsPage } from './screens/Pages';
 import { Player } from './screens/Player';
 import { Login } from './screens/Login';
+import { ProfilePicker, ProfilesPage, pickerMode, showPickerAtLaunch } from './screens/Profiles';
 
 function Screen(props: { route: Route; active: boolean }) {
   const r = props.route;
@@ -25,6 +26,8 @@ function Screen(props: { route: Route; active: boolean }) {
       return <SettingsPage active={props.active} />;
     case 'login':
       return <Login />;
+    case 'profiles':
+      return <ProfilesPage />;
     case 'grid':
       return <Grid {...r} />;
     case 'details':
@@ -44,6 +47,7 @@ function App() {
     }
   });
   onMount(() => void loadSettings().catch(() => undefined));
+  onMount(() => void showPickerAtLaunch());
   // No browser context menu anywhere in the TV UI.
   addEventListener('contextmenu', (e) => e.preventDefault());
   // LOUNGE_DEBUG=1 logs every key, to map remote control buttons.
@@ -84,6 +88,7 @@ function App() {
       <Show when={isRoot()}>
         <Rail />
       </Show>
+      <Show when={pickerMode()}>{(mode) => <ProfilePicker mode={mode()} />}</Show>
       <Toast />
     </div>
   );

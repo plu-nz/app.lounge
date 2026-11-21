@@ -34,7 +34,23 @@ func OpenDir(dir string) (*Store, error) {
 }
 
 // Dir returns the directory the store writes to.
-func (s *Store) Dir() string { return s.dir }
+func (s *Store) Dir() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.dir
+}
+
+// SetDir points the store at another directory, creating it when needed.
+// Documents already loaded into memory are not reloaded; callers do that.
+func (s *Store) SetDir(dir string) error {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.dir = dir
+	s.mu.Unlock()
+	return nil
+}
 
 // Load decodes a document into v. A missing document leaves v unchanged and
 // reports ok=false.
