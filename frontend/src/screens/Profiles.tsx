@@ -167,7 +167,11 @@ export function ProfilesPage() {
     }
   };
   const add = async () => {
-    if (!newName().trim()) return;
+    // An empty name sends the focus to the field instead of doing nothing.
+    if (!newName().trim()) {
+      focusSoon('.profile-add input');
+      return;
+    }
     if (await run(() => profiles.create(newName()))) setNewName('');
   };
 
@@ -266,10 +270,11 @@ export function ProfilesPage() {
                 }}
               </For>
             </div>
-            <div class="profile-add">
+            <div class="profile-add" data-nav-group>
               <input
                 class="field"
                 data-nav
+                data-nav-entry
                 value={newName()}
                 placeholder={t('profiles.namePlaceholder')}
                 maxLength={24}
