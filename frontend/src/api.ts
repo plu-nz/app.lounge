@@ -259,7 +259,16 @@ export const segmentsApi = {
       .catch(() => [] as Segment[]),
 };
 
-export type AccountStatus = { signedIn: boolean; email: string; syncedAt: number; error?: string };
+export type AccountStatus = {
+  signedIn: boolean;
+  email: string;
+  syncedAt: number;
+  error?: string;
+  librarySyncedAt: number;
+  libraryPulled: number;
+  libraryPushed: number;
+  libraryError?: string;
+};
 export type LinkCode = { code: string; link: string; qrcode: string };
 
 export const account = {

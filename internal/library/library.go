@@ -2,6 +2,7 @@
 package library
 
 import (
+	"cmp"
 	"slices"
 	"sync"
 	"time"
@@ -42,6 +43,9 @@ const WatchedThreshold = 0.92
 type data struct {
 	Entries map[string]Entry `json:"entries"`
 	Watched map[string]int64 `json:"watched"` // video ID -> time
+	// Dismissed holds the time each title left continue watching, so a
+	// sync does not bring it back.
+	Dismissed map[string]int64 `json:"dismissed,omitempty"`
 }
 
 // Library stores progress and watched videos.
@@ -49,6 +53,8 @@ type Library struct {
 	store *store.Store
 	mu    sync.Mutex
 	d     data
+	// OnChange, when set, runs after progress is saved locally.
+	OnChange func()
 }
 
 const doc = "library"
@@ -65,6 +71,9 @@ func Load(st *store.Store) (*Library, error) {
 	if l.d.Watched == nil {
 		l.d.Watched = map[string]int64{}
 	}
+	if l.d.Dismissed == nil {
+		l.d.Dismissed = map[string]int64{}
+	}
 	return l, nil
 }
 
@@ -72,14 +81,19 @@ func Load(st *store.Store) (*Library, error) {
 // watched and leaves continue watching for movies.
 func (l *Library) Save(e Entry) error {
 	l.mu.Lock()
-	defer l.mu.Unlock()
 	e.UpdatedAt = time.Now().UnixMilli()
 	if e.Fraction() >= WatchedThreshold {
 		l.d.Watched[e.VideoID] = e.UpdatedAt
 		e.Position = e.Duration
 	}
 	l.d.Entries[e.ID] = e
-	return l.store.Save(doc, l.d)
+	delete(l.d.Dismissed, e.ID)
+	err := l.store.Save(doc, l.d)
+	l.mu.Unlock()
+	if l.OnChange != nil {
+		l.OnChange()
+	}
+	return err
 }
 
 // Get returns the entry for a meta ID.
@@ -95,6 +109,7 @@ func (l *Library) Remove(id string) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	delete(l.d.Entries, id)
+	l.d.Dismissed[id] = time.Now().UnixMilli()
 	return l.store.Save(doc, l.d)
 }
 
@@ -139,6 +154,11 @@ func (l *Library) ContinueWatching() []Entry {
 		}
 		out = append(out, e)
 	}
-	slices.SortFunc(out, func(a, b Entry) int { return int(b.UpdatedAt - a.UpdatedAt) })
+	slices.SortFunc(out, func(a, b Entry) int {
+		if c := cmp.Compare(b.UpdatedAt, a.UpdatedAt); c != 0 {
+			return c
+		}
+		return cmp.Compare(b.ID, a.ID) // stable order for saves in the same millisecond
+	})
 	return out
 }

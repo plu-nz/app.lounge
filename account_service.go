@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/plu-nz/app.lounge/internal/library"
 	"github.com/plu-nz/app.lounge/internal/store"
 	"github.com/plu-nz/app.lounge/internal/stremio"
 )
@@ -19,6 +20,11 @@ type AccountStatus struct {
 	Email    string `json:"email"`
 	SyncedAt int64  `json:"syncedAt"`
 	Error    string `json:"error,omitempty"`
+	// Library sync: when it last succeeded, what it moved, and why it failed.
+	LibrarySyncedAt int64  `json:"librarySyncedAt"`
+	LibraryPulled   int    `json:"libraryPulled"`
+	LibraryPushed   int    `json:"libraryPushed"`
+	LibraryError    string `json:"libraryError,omitempty"`
 }
 
 // AccountService signs in to Stremio and mirrors the account's addons.
@@ -28,6 +34,11 @@ type AccountService struct {
 	store  *store.Store
 	// changed tells the UI that the addon list was replaced.
 	changed func()
+	// libraryChanged tells the UI that a sync updated the library.
+	libraryChanged func()
+	lib            *library.Library
+	librarySync    libSync
+	pushTimer      *time.Timer
 
 	mu       sync.Mutex
 	account  *stremio.Account
@@ -35,8 +46,9 @@ type AccountService struct {
 	syncErr  string
 }
 
-func newAccountService(client *stremio.Client, addons *stremio.Addons, st *store.Store) (*AccountService, error) {
-	s := &AccountService{client: client, addons: addons, store: st, changed: func() {}}
+func newAccountService(client *stremio.Client, addons *stremio.Addons, lib *library.Library, st *store.Store) (*AccountService, error) {
+	s := &AccountService{client: client, addons: addons, store: st, lib: lib, changed: func() {}, libraryChanged: func() {}}
+	lib.OnChange = s.pushSoon
 	var acc stremio.Account
 	ok, err := st.Load(accountDoc, &acc)
 	if err != nil {
@@ -56,7 +68,11 @@ func (s *AccountService) Status() AccountStatus {
 	if s.account == nil {
 		return AccountStatus{}
 	}
-	return AccountStatus{SignedIn: true, Email: s.account.Email, SyncedAt: s.syncedAt, Error: s.syncErr}
+	return AccountStatus{
+		SignedIn: true, Email: s.account.Email, SyncedAt: s.syncedAt, Error: s.syncErr,
+		LibrarySyncedAt: s.librarySync.at, LibraryPulled: s.librarySync.pulled,
+		LibraryPushed: s.librarySync.pushed, LibraryError: s.librarySync.err,
+	}
 }
 
 // Login signs in with email and password, then syncs addons.
@@ -105,6 +121,11 @@ func (s *AccountService) Logout() error {
 	acc := s.account
 	s.account = nil
 	s.syncedAt, s.syncErr = 0, ""
+	s.librarySync = libSync{}
+	if s.pushTimer != nil {
+		s.pushTimer.Stop()
+		s.pushTimer = nil
+	}
 	s.mu.Unlock()
 	s.addons.SetManaged(false)
 	if acc != nil {
@@ -158,6 +179,10 @@ func (s *AccountService) sync(ctx context.Context) error {
 	s.mu.Unlock()
 	if err == nil {
 		s.changed()
+	}
+	// The library syncs on its own; its failure is reported separately.
+	if lerr := s.syncLibrary(ctx); lerr != nil && err == nil {
+		log.Printf("stremio library sync: %v", lerr)
 	}
 	return err
 }
