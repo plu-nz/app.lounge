@@ -10,6 +10,11 @@ const [settings, setSignal] = createSignal<Settings>({
   autoplayNext: true,
   theme: 'gtk',
   accent: 'theme',
+  sourceMode: 'ask',
+  sourceMaxHeight: 0,
+  sourceMaxSizeGb: 0,
+  sourcePrefer: '',
+  sourceMinSeeders: 0,
 });
 export { settings };
 

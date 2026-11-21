@@ -5,7 +5,8 @@ import { Backdrop, MetaLine, Spinner, errorText, toast } from '../components';
 import { t } from '../i18n';
 import { focusEl, focusFirst, glide, onBack } from '../nav';
 import { push } from '../router';
-import { findStream, SourceRows, streamKey, toRequest } from '../streams';
+import { AutoSourceRows, autoPick } from '../autopick';
+import { findStream, streamKey, toRequest } from '../streams';
 
 type Pick = { video: Video | null; videoId: string; start: number };
 
@@ -110,18 +111,27 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
     });
   };
 
-  // Resume from continue watching: reuse the last source when it is offered again.
+  /** resuming is true for the video that continue watching reopens; its source is chosen below. */
+  const resuming = (videoId: string) => Boolean(props.autoplay) && videoId === (entry()?.videoId ?? (isSeries() ? undefined : props.id));
+
+  // Resume from continue watching: reuse the last source when it is offered
+  // again, else (in automatic mode) pick the best one.
   const [autoplaying, setAutoplaying] = createSignal(false);
   createEffect(
     on([next, entry, () => meta.loading || entry.loading], ([pick, e, loading]) => {
       if (!props.autoplay || loading || !pick || autoplaying()) return;
       setAutoplaying(true);
-      if (!e?.streamKey) return;
+      if (!e?.streamKey) {
+        if (e) void autoPick(props.type, pick.videoId).then((found) => found && props.active && play(pick, found.stream, found.group)).catch(() => undefined);
+        return;
+      }
       content
         .streams(props.type, pick.videoId)
-        .then((groups) => {
+        .then(async (groups) => {
           const found = findStream(groups, { key: e.streamKey });
-          if (found && props.active) play(pick, found.stream, found.group);
+          if (found && props.active) return play(pick, found.stream, found.group);
+          const best = await autoPick(props.type, pick.videoId);
+          if (best && props.active) play(pick, best.stream, best.group);
         })
         .catch(() => undefined);
     }),
@@ -244,12 +254,14 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
           </Show>
           <Show when={movieSources()} keyed>
             {(pick) => (
-              <SourceRows
+              <AutoSourceRows
                 type={props.type}
                 videoId={pick.videoId}
                 label={sourcesLabel(pick)}
                 selectedKey={entry()?.videoId === pick.videoId ? entry()?.streamKey : undefined}
                 onPick={(s, g) => play(pick, s, g)}
+                active={props.active}
+                disabled={resuming(pick.videoId)}
               />
             )}
           </Show>
@@ -313,12 +325,14 @@ export function Details(props: { type: string; id: string; preview?: MetaPreview
           <Show when={chosen()} keyed>
             {(pick) => (
               <div class="episode-sources" data-nav-top="0.5">
-                <SourceRows
+                <AutoSourceRows
                   type={props.type}
                   videoId={pick.videoId}
                   label={sourcesLabel(pick)}
                   selectedKey={entry()?.videoId === pick.videoId ? entry()?.streamKey : undefined}
                   onPick={(s, g) => play(pick, s, g)}
+                  active={props.active}
+                  disabled={resuming(pick.videoId)}
                 />
               </div>
             )}

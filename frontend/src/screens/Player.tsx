@@ -6,6 +6,7 @@ import { t } from '../i18n';
 import { focusEl, onBack } from '../nav';
 import { pop, replaceTop, type PlayContext } from '../router';
 import { settings } from '../settings';
+import { autoPick } from '../autopick';
 import { findStream, streamKey, StreamPicker, toRequest } from '../streams';
 import { episodeLabel } from './Details';
 
@@ -160,7 +161,8 @@ export function Player(props: { play: PlayContext; active: boolean }) {
     setStarted(false);
     try {
       const groups = await content.streams(ctx.meta.type, v.id);
-      const found = findStream(groups, { bingeGroup: ctx.bingeGroup, addonId: ctx.addonId });
+      // The binge group keeps the same release; otherwise automatic mode ranks the sources.
+      const found = findStream(groups, { bingeGroup: ctx.bingeGroup }) ?? (await autoPick(ctx.meta.type, v.id)) ?? findStream(groups, { addonId: ctx.addonId });
       if (!found) throw new Error(t('streams.none'));
       replaceTop({
         name: 'player',

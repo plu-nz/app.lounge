@@ -17,6 +17,7 @@ Website and downloads: [lounge.plu.nz](https://lounge.plu.nz/).
 - "View all" grids with genre filters, and search across every searchable catalog.
 - Details for movies and series, with seasons, episodes, and watched marks.
 - Sources in horizontal rows, one per addon, with quality and size. Movies show them when the title opens; series show them after you pick an episode from the horizontal episode row.
+- Optional automatic source selection (Settings, "Source selection"): Lounge plays the best-ranked source when a title or episode opens, under a maximum resolution and size, a direct or torrent preference, and a minimum seeder count. Back cancels the pick, and the list shows when no source passes the rules.
 - Direct HTTP streams and BitTorrent streams. Torrents are streamed by an embedded engine, so Stremio Service is not needed.
 - In-window playback through libmpv, with controls over the video:
   - seek and pause;
