@@ -1,6 +1,6 @@
 import { createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { AudioLines, Gauge, Layers, Pause, Play, RotateCcw, RotateCw, SkipForward, Subtitles } from 'lucide-solid';
-import { content, library, player, type TorrentStatus, type Video } from '../api';
+import { content, library, player, tracksApi, type TorrentStatus, type TrackInfo, type Video } from '../api';
 import { Panel, Spinner, errorText } from '../components';
 import { t } from '../i18n';
 import { focusEl, onBack } from '../nav';
@@ -9,7 +9,7 @@ import { settings } from '../settings';
 import { findStream, streamKey, StreamPicker, toRequest } from '../streams';
 import { episodeLabel } from './Details';
 
-type Track = { id: number; type: 'video' | 'audio' | 'sub'; lang?: string; title?: string; codec?: string; external?: boolean; selected?: boolean; 'demux-channel-count'?: number };
+type Track = { id: number; type: 'video' | 'audio' | 'sub'; lang?: string; title?: string; codec?: string; external?: boolean; selected?: boolean; default?: boolean; forced?: boolean; 'demux-channel-count'?: number };
 
 const hideAfter = 4000;
 const mouseRevealDistance = 24;
@@ -179,27 +179,30 @@ export function Player(props: { play: PlayContext; active: boolean }) {
     }
   };
 
+  // Adds the addon subtitles, then picks the audio and subtitle tracks from
+  // this title's remembered choices and the preferences.
   const addExternalSubtitles = async () => {
     const videoId = ctx.video?.id ?? ctx.meta.id;
     const subs = await content.subtitles(ctx.meta.type, videoId).catch(() => []);
-    const wanted = settings().subtitleLanguages;
     for (const s of subs.slice(0, 40)) {
-      await player.command('sub-add', s.url, 'auto', s.lang, s.lang).catch(() => undefined);
+      await player.command('sub-add', s.url, 'cached', s.lang, s.lang).catch(() => undefined);
     }
-    // Pick a preferred language when nothing is selected yet.
-    if (wanted.length) {
-      const list = await player.get<Track[]>('track-list').catch(() => []);
-      const current = list.find((tr) => tr.type === 'sub' && tr.selected);
-      if (!current) {
-        for (const lang of wanted) {
-          const tr = list.find((tr) => tr.type === 'sub' && tr.lang && langMatches(tr.lang, lang));
-          if (tr) {
-            void player.set('sid', tr.id);
-            break;
-          }
-        }
-      }
-    }
+    const list = await player.get<Track[]>('track-list').catch(() => [] as Track[]);
+    const info: TrackInfo[] = list
+      .filter((tr) => tr.type !== 'video')
+      .map((tr) => ({ id: tr.id, type: tr.type, lang: tr.lang ?? '', title: tr.title ?? '', default: Boolean(tr.default), forced: Boolean(tr.forced), external: Boolean(tr.external) }));
+    const pick = await tracksApi.select(ctx.meta.id, info).catch(() => undefined);
+    if (!pick) return;
+    if (pick.audioId && !list.some((tr) => tr.type === 'audio' && tr.selected && tr.id === pick.audioId)) void player.set('aid', pick.audioId);
+    if (pick.subOff) void player.set('sid', 'no');
+    else if (pick.subId) void player.set('sid', pick.subId);
+  };
+
+  // Remembers a manual choice for this series (or movie).
+  const remember = (kind: 'audio' | 'sub', tr?: Track) => {
+    const choice = tr ? { lang: tr.lang ?? '' } : { off: true };
+    if (tr && !choice.lang) return;
+    void tracksApi.remember(ctx.meta.id, kind, choice).catch(() => undefined);
   };
 
   onMount(() => {
@@ -526,6 +529,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
                 data-nav-default={tr.selected ? '' : undefined}
                 onClick={() => {
                   void player.set('aid', tr.id);
+                  remember('audio', tr);
                   setMenu(undefined);
                 }}
               >
@@ -547,6 +551,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
             data-nav-default={!subTracks().some((s) => s.selected) ? '' : undefined}
             onClick={() => {
               void player.set('sid', 'no');
+              remember('sub');
               setMenu(undefined);
             }}
           >
@@ -563,6 +568,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
                 data-nav-default={tr.selected ? '' : undefined}
                 onClick={() => {
                   void player.set('sid', tr.id);
+                  remember('sub', tr);
                   setMenu(undefined);
                 }}
               >
@@ -623,16 +629,4 @@ export function Player(props: { play: PlayContext; active: boolean }) {
       </Show>
     </div>
   );
-}
-
-function langMatches(trackLang: string, wanted: string): boolean {
-  const a = trackLang.toLowerCase();
-  const b = wanted.toLowerCase();
-  if (a === b || a.startsWith(b) || b.startsWith(a)) return true;
-  const aliases: Record<string, string[]> = {
-    por: ['pt', 'pob', 'pt-br', 'ptbr', 'portuguese'],
-    eng: ['en', 'english'],
-    spa: ['es', 'spanish', 'spl'],
-  };
-  return (aliases[b] ?? []).includes(a);
 }

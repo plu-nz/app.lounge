@@ -6,6 +6,7 @@ const [settings, setSignal] = createSignal<Settings>({
   language: '',
   audioLanguages: [],
   subtitleLanguages: [],
+  subtitleMode: 'on',
   subtitleScale: 1,
   autoplayNext: true,
   theme: 'gtk',
@@ -81,7 +82,7 @@ function apply(s: Settings) {
   setLanguage(s.language);
   applyTheme(s);
   void player.set('alang', (s.audioLanguages ?? []).join(',')).catch(() => undefined);
-  void player.set('slang', (s.subtitleLanguages ?? []).join(',')).catch(() => undefined);
+  void player.set('slang', (s.subtitleMode && s.subtitleMode !== 'on' ? [] : s.subtitleLanguages ?? []).join(',')).catch(() => undefined);
   void player.set('sub-scale', s.subtitleScale || 1).catch(() => undefined);
 }
 
@@ -91,6 +92,7 @@ export async function loadSettings() {
   const s = await settingsApi.get();
   s.audioLanguages ??= [];
   s.subtitleLanguages ??= [];
+  s.subtitleMode ||= 'on';
   setSignal(s);
   apply(s);
 }
