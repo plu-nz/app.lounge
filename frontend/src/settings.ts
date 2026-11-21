@@ -10,6 +10,10 @@ const [settings, setSignal] = createSignal<Settings>({
   autoplayNext: true,
   theme: 'gtk',
   accent: 'theme',
+  audioOutput: 'stereo',
+  nightMode: false,
+  audioDevice: '',
+  hdr: 'tonemap',
 });
 export { settings };
 
@@ -83,6 +87,7 @@ function apply(s: Settings) {
   void player.set('alang', (s.audioLanguages ?? []).join(',')).catch(() => undefined);
   void player.set('slang', (s.subtitleLanguages ?? []).join(',')).catch(() => undefined);
   void player.set('sub-scale', s.subtitleScale || 1).catch(() => undefined);
+  void player.applyAV(s).catch(() => undefined);
 }
 
 export async function loadSettings() {

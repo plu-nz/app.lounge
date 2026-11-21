@@ -103,6 +103,13 @@ export type Settings = {
   /** theme is 'gtk' (follow the desktop) or 'lounge'; empty means 'gtk'. */
   theme: string;
   accent: string;
+  /** audioOutput is 'stereo' (default), 'auto' or 'passthrough'. */
+  audioOutput: string;
+  nightMode: boolean;
+  /** audioDevice is an mpv device name; empty is the system default. */
+  audioDevice: string;
+  /** hdr is 'tonemap' (default) or 'off'. */
+  hdr: string;
 };
 
 /** GtkTheme is the desktop's GTK theme; colors are CSS values, empty when undefined. */
@@ -197,6 +204,8 @@ export const player = {
     call<void>('PlayerService.SetProperty', name, typeof value === 'boolean' ? (value ? 'yes' : 'no') : String(value)),
   get: async <T>(name: string) => JSON.parse(await call<string>('PlayerService.Property', name)) as T,
   stop: () => call<void>('PlayerService.Stop'),
+  applyAV: (s: Settings) => call<void>('PlayerService.ApplyAV', s),
+  audioDevices: () => call<{ name: string; description: string }[] | null>('PlayerService.AudioDevices').then((r) => r ?? []),
   torrentStatus: (hash: string) => call<TorrentStatus | null>('PlayerService.TorrentStatus', hash),
   on: (fn: (e: PlayerEvent) => void) => Events.On('player', (ev: { data: PlayerEvent }) => fn(ev.data)),
 };

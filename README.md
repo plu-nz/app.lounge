@@ -21,6 +21,7 @@ Website and downloads: [lounge.plu.nz](https://lounge.plu.nz/).
 - In-window playback through libmpv, with controls over the video:
   - seek and pause;
   - audio and subtitle tracks, including addon subtitles;
+  - audio output (stereo downmix, multichannel, or HDMI passthrough), night mode, audio device, and HDR tone-mapping to SDR, all in Settings;
   - playback speed;
   - switching sources while keeping the position.
 - Follows the desktop's GTK theme, light or dark, including its accent color, and switches when the theme changes. The built-in Lounge colors stay available in Settings.

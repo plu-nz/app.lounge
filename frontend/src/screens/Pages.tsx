@@ -6,7 +6,8 @@ import { Card, errorText, Spinner, toast } from '../components';
 import { lang, languageNames, languages, t, typeName } from '../i18n';
 import { focusEl, focusFirst } from '../nav';
 import { push } from '../router';
-import { followsGtk, gtkTheme, settings, updateSettings } from '../settings';
+import { AvSettings } from './AvSettings';
+import { followsGtk,gtkTheme, settings, updateSettings } from '../settings';
 
 /* Search ---------------------------------------------------------------- */
 
@@ -434,6 +435,7 @@ export function SettingsPage(props: { active: boolean }) {
           () => `${Math.round((s().subtitleScale || 1) * 100)}%`,
           () => void updateSettings({ subtitleScale: cycle(subSizes, s().subtitleScale || 1) }),
         )}
+        <AvSettings />
         <button class="setting" data-nav onClick={() => void Window.ToggleFullscreen()}>
           <span>{t('settings.fullscreen')}</span>
           <Maximize />
