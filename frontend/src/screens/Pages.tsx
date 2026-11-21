@@ -318,7 +318,8 @@ export function Addons() {
 const namedAccents = ['blue', 'mauve', 'lavender', 'green', 'orange', 'red'];
 const themes = ['gtk', 'lounge'];
 const skipModes = ['ask', 'auto', 'off'];
-const mediaLangs = ['', 'por', 'eng', 'spa'];
+const mediaLangs = ['', 'por', 'eng', 'spa', 'fra', 'deu', 'ita', 'jpn', 'kor', 'rus', 'zho'];
+const subModes = ['on', 'auto', 'off'];
 const subSizes = [0.8, 1, 1.2, 1.4, 1.6];
 
 function cycle<T>(list: T[], current: T): T {
@@ -327,7 +328,20 @@ function cycle<T>(list: T[], current: T): T {
 
 function langLabel(code: string) {
   if (!code) return t('settings.none');
-  return { por: 'Português', eng: 'English', spa: 'Español' }[code] ?? code;
+  return (
+    {
+      por: 'Português',
+      eng: 'English',
+      spa: 'Español',
+      fra: 'Français',
+      deu: 'Deutsch',
+      ita: 'Italiano',
+      jpn: '日本語',
+      kor: '한국어',
+      rus: 'Русский',
+      zho: '中文',
+    }[code] ?? code
+  );
 }
 
 export function SettingsPage(props: { active: boolean }) {
@@ -443,6 +457,11 @@ export function SettingsPage(props: { active: boolean }) {
             const next = cycle(mediaLangs, s().subtitleLanguages[0] ?? '');
             void updateSettings({ subtitleLanguages: next ? [next] : [] });
           },
+        )}
+        {item(
+          () => t('settings.subMode'),
+          () => t(`settings.subMode.${s().subtitleMode || 'on'}` as Parameters<typeof t>[0]),
+          () => void updateSettings({ subtitleMode: cycle(subModes, s().subtitleMode || 'on') }),
         )}
         {item(
           () => t('settings.subSize'),

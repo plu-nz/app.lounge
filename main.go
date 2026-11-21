@@ -14,6 +14,7 @@ import (
 	"github.com/plu-nz/app.lounge/internal/library"
 	"github.com/plu-nz/app.lounge/internal/player"
 	"github.com/plu-nz/app.lounge/internal/settings"
+	"github.com/plu-nz/app.lounge/internal/tracks"
 	"github.com/plu-nz/app.lounge/internal/store"
 	"github.com/plu-nz/app.lounge/internal/stremio"
 	"github.com/plu-nz/app.lounge/internal/torrent"
@@ -44,6 +45,10 @@ func main() {
 	lib, err := library.Load(st)
 	if err != nil {
 		log.Fatalf("library: %v", err)
+	}
+	trackPrefs, err := tracks.LoadOverrides(st)
+	if err != nil {
+		log.Fatalf("tracks: %v", err)
 	}
 	client := stremio.NewClient()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -93,6 +98,7 @@ func main() {
 			application.NewService(&LibraryService{library: lib}),
 			application.NewService(&SettingsService{settings: prefs}),
 			application.NewService(newSegmentService()),
+			application.NewService(&TracksService{settings: prefs, overrides: trackPrefs}),
 			application.NewService(themes),
 			application.NewService(account),
 			application.NewService(&AppService{debug: os.Getenv("LOUNGE_DEBUG") != ""}),

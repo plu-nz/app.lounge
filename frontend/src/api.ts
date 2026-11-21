@@ -98,6 +98,8 @@ export type Settings = {
   language: string;
   audioLanguages: string[];
   subtitleLanguages: string[];
+  /** subtitleMode is 'on', 'off', or 'auto' (only when the audio is not in the preferred language). */
+  subtitleMode?: string;
   subtitleScale: number;
   autoplayNext: boolean;
   /** skipSegments is 'off', 'ask' (a button), or 'auto'. */
@@ -199,6 +201,15 @@ export const library = {
 export const settingsApi = {
   get: () => call<Settings>('SettingsService.Get'),
   set: (s: Settings) => call<void>('SettingsService.Set', s),
+};
+
+export type TrackInfo = { id: number; type: string; lang: string; title: string; default: boolean; forced: boolean; external: boolean };
+export type TrackChoice = { lang?: string; off?: boolean };
+export type TrackResult = { audioId: number; subId: number; subOff: boolean };
+
+export const tracksApi = {
+  select: (titleId: string, list: TrackInfo[]) => call<TrackResult>('TracksService.Select', titleId, list),
+  remember: (titleId: string, kind: 'audio' | 'sub', choice: TrackChoice) => call<void>('TracksService.Remember', titleId, kind, choice),
 };
 
 export const player = {
