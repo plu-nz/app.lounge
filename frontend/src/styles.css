@@ -5,13 +5,8 @@ html {
   font-size: calc(100vh / 54);
 }
 
-/* Extra Tinta accents (mauve, lavender) beyond the shared library's four; the
-   shared library will provide them once its pin is bumped. The "theme" accent
-   is the GTK theme's own. */
-.plz-theme {
-  --plz-mauve: #cba6f7;
-  --plz-lavender: #b4befe;
-}
+/* Mauve and lavender come from the shared library. The "theme" accent is the
+   GTK theme's own, and mauve and lavender also tint the focus ring. */
 
 .plz-theme[data-plz-accent='theme'] {
   --plz-accent: var(--plz-theme-accent, var(--plz-blue));
