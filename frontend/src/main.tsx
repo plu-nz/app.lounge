@@ -4,14 +4,14 @@ import { Call, Window } from '@wailsio/runtime';
 import './styles.css';
 import { Rail, Toast } from './components';
 import { focusEl, focusFirst, installNavigation, onBack } from './nav';
-import { depth, pop, restoredFocus, route, stackRoutes, type Route } from './router';
+import { depth, pop, push, restoredFocus, route, stackRoutes, type Route } from './router';
 import { loadSettings } from './settings';
 import { Details } from './screens/Details';
 import { Home } from './screens/Home';
 import { Addons, Grid, Search, SettingsPage } from './screens/Pages';
 import { Player } from './screens/Player';
 import { Login } from './screens/Login';
-import { ProfilePicker, ProfilesPage, pickerMode, showPickerAtLaunch } from './screens/Profiles';
+import { ProfilePicker, ProfilesPage, pickerMode, runAfterSwitch, showPickerAtLaunch } from './screens/Profiles';
 
 function Screen(props: { route: Route; active: boolean }) {
   const r = props.route;
@@ -48,6 +48,7 @@ function App() {
   });
   onMount(() => void loadSettings().catch(() => undefined));
   onMount(() => void showPickerAtLaunch());
+  onMount(() => runAfterSwitch(() => push({ name: 'login' })));
   // No browser context menu anywhere in the TV UI.
   addEventListener('contextmenu', (e) => e.preventDefault());
   // LOUNGE_DEBUG=1 logs every key, to map remote control buttons.

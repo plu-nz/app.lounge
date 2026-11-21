@@ -1675,3 +1675,68 @@ button {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+.avatar.add {
+  background: transparent;
+  border: 0.2rem dashed var(--plz-muted);
+  color: var(--plz-muted);
+}
+
+.avatar.add svg {
+  width: 40%;
+  height: 40%;
+}
+
+.profile-new {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  width: min(48rem, 80vw);
+}
+
+.profile-new .field {
+  width: 100%;
+}
+
+.profile-new-choices {
+  display: flex;
+  gap: 1.6rem;
+  width: 100%;
+}
+
+.profile-choice {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.6rem 1.2rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--plz-surface);
+  color: var(--plz-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.profile-choice svg {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.profile-choice-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.profile-choice-hint {
+  font-size: 1rem;
+  color: var(--plz-muted);
+  text-align: center;
+}
+
+.profile-choice.focused {
+  outline: 0.18rem solid var(--plz-accent);
+  transform: scale(1.04);
+}
