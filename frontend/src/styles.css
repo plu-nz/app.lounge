@@ -1640,6 +1640,8 @@ button {
   display: flex;
   gap: 0.9rem;
   max-width: 36rem;
+}
+
 .player .torrent-stats {
   position: absolute;
   top: 5.4rem;
