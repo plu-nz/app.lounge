@@ -9,6 +9,7 @@ import (
 	"github.com/plu-nz/app.lounge/internal/settings"
 	"github.com/plu-nz/app.lounge/internal/store"
 	"github.com/plu-nz/app.lounge/internal/stremio"
+	"github.com/plu-nz/app.lounge/internal/tracks"
 )
 
 // ProfileService lists, edits, and switches profiles. Switching points the
@@ -20,6 +21,7 @@ type ProfileService struct {
 	settings *settings.Manager
 	addons   *stremio.Addons
 	account  *AccountService
+	tracks   *tracks.Overrides
 	// changed tells the UI that the active profile's data was replaced.
 	changed func()
 
@@ -77,6 +79,9 @@ func (s *ProfileService) reload() error {
 		return err
 	}
 	if err := s.settings.Reload(); err != nil {
+		return err
+	}
+	if err := s.tracks.Reload(); err != nil {
 		return err
 	}
 	ctx, cancel := timeout(15 * time.Second)

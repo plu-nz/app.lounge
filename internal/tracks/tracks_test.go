@@ -105,3 +105,24 @@ func TestOverridesPersist(t *testing.T) {
 		t.Fatalf("got %+v", got)
 	}
 }
+
+func TestOverridesReloadFollowsTheStore(t *testing.T) {
+	st, err := store.OpenDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	o, err := LoadOverrides(st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := o.Remember("tt1", "audio", Choice{Lang: "por"}); err != nil {
+		t.Fatal(err)
+	}
+	st.SetDir(t.TempDir())
+	if err := o.Reload(); err != nil {
+		t.Fatal(err)
+	}
+	if o.Get("tt1") != nil {
+		t.Fatal("override from the previous profile survived Reload")
+	}
+}

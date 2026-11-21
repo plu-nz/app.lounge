@@ -76,7 +76,7 @@ func main() {
 
 	phoneAdd := &PhoneAddService{addons: addons, client: client}
 	profileSvc := &ProfileService{
-		profiles: profiles, library: lib, settings: prefs, addons: addons, account: account,
+		profiles: profiles, library: lib, settings: prefs, addons: addons, account: account, tracks: trackPrefs,
 		changed: func() {},
 	}
 	themes := &ThemeService{debug: os.Getenv("LOUNGE_DEBUG") != ""}

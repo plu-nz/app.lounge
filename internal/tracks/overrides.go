@@ -58,3 +58,19 @@ func (o *Overrides) Remember(key, kind string, c Choice) error {
 	o.d[key] = v
 	return o.store.Save(doc, o.d)
 }
+
+// Reload replaces the in-memory overrides with the store's document, which may
+// now point at another profile.
+func (o *Overrides) Reload() error {
+	d := map[string]Override{}
+	if _, err := o.store.Load(doc, &d); err != nil {
+		return err
+	}
+	if d == nil {
+		d = map[string]Override{}
+	}
+	o.mu.Lock()
+	o.d = d
+	o.mu.Unlock()
+	return nil
+}
