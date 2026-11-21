@@ -7,6 +7,7 @@ import { lang, languageNames, languages, t, typeName } from '../i18n';
 import { focusEl, focusFirst } from '../nav';
 import { push } from '../router';
 import { followsGtk, gtkTheme, settings, updateSettings } from '../settings';
+import { nearestSize, previewCss, sizeKey, subBackgrounds, subColors, subPositions, subSizes } from '../subtitleStyle';
 
 /* Search ---------------------------------------------------------------- */
 
@@ -309,7 +310,6 @@ export function Addons() {
 const namedAccents = ['blue', 'mauve', 'lavender', 'green', 'orange', 'red'];
 const themes = ['gtk', 'lounge'];
 const mediaLangs = ['', 'por', 'eng', 'spa'];
-const subSizes = [0.8, 1, 1.2, 1.4, 1.6];
 
 function cycle<T>(list: T[], current: T): T {
   return list[(list.indexOf(current) + 1) % list.length];
@@ -431,9 +431,27 @@ export function SettingsPage(props: { active: boolean }) {
         )}
         {item(
           () => t('settings.subSize'),
-          () => `${Math.round((s().subtitleScale || 1) * 100)}%`,
-          () => void updateSettings({ subtitleScale: cycle(subSizes, s().subtitleScale || 1) }),
+          () => t(sizeKey(s().subtitleScale)),
+          () => void updateSettings({ subtitleScale: cycle(subSizes.map((o) => o.value), nearestSize(s().subtitleScale)) }),
         )}
+        {item(
+          () => t('settings.subColor'),
+          () => t(`sub.color.${s().subtitleColor || 'white'}` as Parameters<typeof t>[0]),
+          () => void updateSettings({ subtitleColor: cycle(Object.keys(subColors), s().subtitleColor || 'white') }),
+        )}
+        {item(
+          () => t('settings.subBackground'),
+          () => t(`sub.bg.${s().subtitleBackground || 'outline'}` as Parameters<typeof t>[0]),
+          () => void updateSettings({ subtitleBackground: cycle([...subBackgrounds], s().subtitleBackground || 'outline') }),
+        )}
+        {item(
+          () => t('settings.subPosition'),
+          () => t(`sub.pos.${s().subtitlePosition || 'bottom'}` as Parameters<typeof t>[0]),
+          () => void updateSettings({ subtitlePosition: cycle([...subPositions], s().subtitlePosition || 'bottom') }),
+        )}
+        <div class="sub-preview" aria-hidden="true">
+          <span style={previewCss(s())}>{t('settings.subPreview')}</span>
+        </div>
         <button class="setting" data-nav onClick={() => void Window.ToggleFullscreen()}>
           <span>{t('settings.fullscreen')}</span>
           <Maximize />

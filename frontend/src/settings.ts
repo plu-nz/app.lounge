@@ -7,6 +7,9 @@ const [settings, setSignal] = createSignal<Settings>({
   audioLanguages: [],
   subtitleLanguages: [],
   subtitleScale: 1,
+  subtitleColor: 'white',
+  subtitleBackground: 'outline',
+  subtitlePosition: 'bottom',
   autoplayNext: true,
   theme: 'gtk',
   accent: 'theme',
@@ -82,7 +85,14 @@ function apply(s: Settings) {
   applyTheme(s);
   void player.set('alang', (s.audioLanguages ?? []).join(',')).catch(() => undefined);
   void player.set('slang', (s.subtitleLanguages ?? []).join(',')).catch(() => undefined);
-  void player.set('sub-scale', s.subtitleScale || 1).catch(() => undefined);
+  void player
+    .subtitleStyle({
+      scale: s.subtitleScale || 1,
+      color: s.subtitleColor || 'white',
+      background: s.subtitleBackground || 'outline',
+      position: s.subtitlePosition || 'bottom',
+    })
+    .catch(() => undefined);
 }
 
 export async function loadSettings() {

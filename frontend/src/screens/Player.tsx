@@ -17,6 +17,12 @@ const mouseRevealWindow = 750;
 // Remote "menu" buttons arrive as the ContextMenu key (XKB Menu).
 const menuKeys = new Set(['ContextMenu', 'Menu']);
 const seekStep = 10;
+const subDelayStep = 100; // ms
+
+function formatDelay(s: number): string {
+  const ms = Math.round(s * 1000);
+  return `${ms > 0 ? '+' : ''}${ms} ms`;
+}
 
 export function formatTime(s: number): string {
   if (!Number.isFinite(s) || s < 0) s = 0;
@@ -55,6 +61,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
   const [started, setStarted] = createSignal(false);
   const [tracks, setTracks] = createSignal<Track[]>([]);
   const [speed, setSpeed] = createSignal(1);
+  const [subDelay, setSubDelay] = createSignal(0);
   const [error, setError] = createSignal('');
   const [visible, setVisible] = createSignal(true);
   const [menu, setMenu] = createSignal<'audio' | 'sub' | 'speed' | 'sources'>();
@@ -235,6 +242,9 @@ export function Player(props: { play: PlayContext; active: boolean }) {
             break;
           case 'speed':
             if (typeof e.value === 'number') setSpeed(e.value);
+            break;
+          case 'sub-delay':
+            if (typeof e.value === 'number') setSubDelay(e.value);
             break;
         }
       } else if (e.kind === 'loaded') {
@@ -540,6 +550,24 @@ export function Player(props: { play: PlayContext; active: boolean }) {
 
       <Show when={menu() === 'sub'}>
         <Panel title={t('player.subtitles')} onClose={() => setMenu(undefined)}>
+          <button
+            class="option delay"
+            data-nav
+            onClick={() => void player.set('sub-delay', 0)}
+            onKeyDown={(e) => {
+              if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+              e.preventDefault();
+              const next = Math.round(subDelay() * 1000 + (e.key === 'ArrowLeft' ? -subDelayStep : subDelayStep)) / 1000;
+              setSubDelay(next);
+              void player.set('sub-delay', next);
+            }}
+          >
+            <div class="main">
+              <div class="title">{t('player.subDelay')}</div>
+              <div class="hint">{t('player.subDelayHint')} · {t('player.subDelayReset')}</div>
+            </div>
+            <div class="controls">{formatDelay(subDelay())}</div>
+          </button>
           <button
             class="option"
             classList={{ selected: !subTracks().some((s) => s.selected) }}

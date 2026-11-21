@@ -1021,6 +1021,37 @@ button {
   color: var(--plz-bg);
 }
 
+.sub-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 6rem;
+  padding: 1rem 1.4rem;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #3a4a5c, #1d2630 55%, #4a3a2c);
+  text-align: center;
+  line-height: 1.35;
+}
+
+.sub-preview span {
+  padding: 0.1em 0.4em;
+  font-weight: 600;
+}
+
+.option.delay .controls {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.option.delay .hint {
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  color: var(--plz-subtle);
+}
+
 /* Player -------------------------------------------------------------- */
 
 .player {
