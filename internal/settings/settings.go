@@ -16,6 +16,11 @@ type Settings struct {
 	SubtitleLanguages []string `json:"subtitleLanguages"`
 	// SubtitleScale multiplies the subtitle size.
 	SubtitleScale float64 `json:"subtitleScale"`
+	// SubtitleColor, SubtitleBackground and SubtitlePosition are presets
+	// understood by internal/subtitle; empty means the default.
+	SubtitleColor      string `json:"subtitleColor"`
+	SubtitleBackground string `json:"subtitleBackground"`
+	SubtitlePosition   string `json:"subtitlePosition"`
 	// AutoplayNext starts the next episode when one ends.
 	AutoplayNext bool `json:"autoplayNext"`
 	// Theme is "gtk" to follow the desktop's GTK theme or "lounge" for the
@@ -29,12 +34,15 @@ type Settings struct {
 // Defaults returns the first-run preferences.
 func Defaults() Settings {
 	return Settings{
-		AudioLanguages:    []string{},
-		SubtitleLanguages: []string{},
-		SubtitleScale:     1,
-		AutoplayNext:      true,
-		Theme:             "gtk",
-		Accent:            "theme",
+		AudioLanguages:     []string{},
+		SubtitleLanguages:  []string{},
+		SubtitleScale:      1,
+		SubtitleColor:      "white",
+		SubtitleBackground: "outline",
+		SubtitlePosition:   "bottom",
+		AutoplayNext:       true,
+		Theme:              "gtk",
+		Accent:             "theme",
 	}
 }
 
