@@ -8,6 +8,7 @@ import (
 
 	"github.com/plu-nz/app.lounge/internal/player"
 	"github.com/plu-nz/app.lounge/internal/stremio"
+	"github.com/plu-nz/app.lounge/internal/subtitle"
 	"github.com/plu-nz/app.lounge/internal/torrent"
 )
 
@@ -61,6 +62,8 @@ func (s *PlayerService) Load(req PlayRequest) error {
 		{"start", "none"},
 		{"force-media-title", req.Title},
 		{"pause", "no"},
+		// The subtitle delay belongs to one video, so a new one starts at 0.
+		{"sub-delay", "0"},
 	}
 	if req.Start > 0 {
 		props[1][1] = fmt.Sprintf("%.3f", req.Start)
@@ -115,4 +118,14 @@ func (s *PlayerService) Stop() error {
 		go s.torrents.DropAll()
 	}
 	return err
+}
+
+// SetSubtitleStyle applies the subtitle appearance to mpv.
+func (s *PlayerService) SetSubtitleStyle(style subtitle.Style) error {
+	for _, p := range subtitle.Properties(style) {
+		if err := s.player.SetProperty(p[0], p[1]); err != nil {
+			return err
+		}
+	}
+	return nil
 }

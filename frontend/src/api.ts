@@ -101,6 +101,10 @@ export type Settings = {
   /** subtitleMode is 'on', 'off', or 'auto' (only when the audio is not in the preferred language). */
   subtitleMode?: string;
   subtitleScale: number;
+  /** Presets understood by internal/subtitle; empty means the default. */
+  subtitleColor?: string;
+  subtitleBackground?: string;
+  subtitlePosition?: string;
   autoplayNext: boolean;
   /** skipSegments is 'off', 'ask' (a button), or 'auto'. */
   skipSegments: string;
@@ -218,6 +222,8 @@ export const player = {
   set: (name: string, value: string | number | boolean) =>
     call<void>('PlayerService.SetProperty', name, typeof value === 'boolean' ? (value ? 'yes' : 'no') : String(value)),
   get: async <T>(name: string) => JSON.parse(await call<string>('PlayerService.Property', name)) as T,
+  subtitleStyle: (style: { scale: number; color: string; background: string; position: string }) =>
+    call<void>('PlayerService.SetSubtitleStyle', style),
   stop: () => call<void>('PlayerService.Stop'),
   torrentStatus: (hash: string) => call<TorrentStatus | null>('PlayerService.TorrentStatus', hash),
   on: (fn: (e: PlayerEvent) => void) => Events.On('player', (ev: { data: PlayerEvent }) => fn(ev.data)),
