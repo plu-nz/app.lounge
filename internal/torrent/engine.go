@@ -45,6 +45,9 @@ type Engine struct {
 
 	mu     sync.Mutex
 	active map[metainfo.Hash]*torrent.Torrent
+
+	policy    func() CachePolicy // see cache.go
+	evictStop chan struct{}
 }
 
 // Status reports download progress for the UI.
@@ -58,11 +61,10 @@ type Status struct {
 	Size          int64   `json:"size"`
 }
 
-// Start creates the client with its data under cacheDir. Old data from a
-// previous run is removed first; Lounge streams and does not seed.
+// Start creates the client with its data under cacheDir. Data from earlier
+// runs stays as a cache that evict.go trims; Lounge streams and does not seed.
 func Start(cacheDir string) (*Engine, error) {
 	dataDir := filepath.Join(cacheDir, "torrents")
-	_ = os.RemoveAll(dataDir)
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return nil, err
 	}
@@ -118,6 +120,7 @@ func (e *Engine) Prepare(ctx context.Context, infoHash string, fileIdx int, file
 	e.mu.Lock()
 	e.active[h] = t
 	e.mu.Unlock()
+	touchEntry(e.dataDir, h.HexString())
 
 	select {
 	case <-t.GotInfo():
@@ -152,25 +155,33 @@ func (e *Engine) Status(infoHash string) (Status, bool) {
 	}, true
 }
 
-// DropAll stops every torrent and frees its data.
+// DropAll stops every torrent. Its data stays in the cache for the next
+// play and is trimmed by Evict.
 func (e *Engine) DropAll() {
 	e.mu.Lock()
 	for h, t := range e.active {
 		t.Drop()
-		_ = os.RemoveAll(filepath.Join(e.dataDir, h.HexString()))
+		touchEntry(e.dataDir, h.HexString())
 		delete(e.active, h)
 	}
 	e.mu.Unlock()
+	e.Evict()
 }
 
-// Close stops the server and the client and removes downloaded data.
+// Close stops the server and the client. Cached data is removed only when
+// the cache policy says to clear on exit.
 func (e *Engine) Close() {
+	if e.evictStop != nil {
+		close(e.evictStop)
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	_ = e.server.Shutdown(ctx)
 	e.DropAll()
 	e.client.Close()
-	_ = os.RemoveAll(e.dataDir)
+	if e.cachePolicy().ClearOnExit {
+		_, _ = e.ClearCache()
+	}
 }
 
 func (e *Engine) serveFile(w http.ResponseWriter, r *http.Request) {
