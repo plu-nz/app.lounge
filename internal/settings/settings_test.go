@@ -55,3 +55,25 @@ func TestChosenThemeIsKept(t *testing.T) {
 		t.Fatalf("theme, accent = %q, %q; want lounge, mauve", got.Theme, got.Accent)
 	}
 }
+
+func TestCacheLimitDefaultsToTenAndKeepsUnlimited(t *testing.T) {
+	dir := t.TempDir()
+	st, _ := store.OpenDir(dir)
+	m, err := Load(st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := m.Get().CacheLimitGB; got != 10 {
+		t.Fatalf("default cache limit = %d, want 10", got)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"theme":"gtk","cacheLimitGB":0}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m, err = Load(st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := m.Get().CacheLimitGB; got != 0 {
+		t.Fatalf("explicit unlimited = %d, want 0", got)
+	}
+}

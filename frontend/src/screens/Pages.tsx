@@ -1,7 +1,7 @@
 import { createEffect, createResource, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
 import { ArrowDown, ArrowUp, Delete, LogIn, LogOut, Maximize, Plus, Power, Smartphone, RefreshCw, Trash2, UserRound } from 'lucide-solid';
 import { Window, Application } from '@wailsio/runtime';
-import { account, addons, addonsVersion, content, type Addon, type MetaPreview } from '../api';
+import { account, addons, addonsVersion, cacheApi, content, type Addon, type MetaPreview } from '../api';
 import { Card, errorText, Spinner, toast } from '../components';
 import { PhonePanel } from './PhonePanel';
 import { lang, languageNames, languages, t, typeName } from '../i18n';
@@ -321,6 +321,13 @@ const themes = ['gtk', 'lounge'];
 const skipModes = ['ask', 'auto', 'off'];
 const mediaLangs = ['', 'por', 'eng', 'spa', 'fra', 'deu', 'ita', 'jpn', 'kor', 'rus', 'zho'];
 const subModes = ['on', 'auto', 'off'];
+const cacheLimits = [5, 10, 20, 50, 0];
+
+function formatBytes(n: number): string {
+  if (n < 1e6) return `${Math.round(n / 1e3)} kB`;
+  if (n < 1e9) return `${Math.round(n / 1e6)} MB`;
+  return `${(n / 1e9).toFixed(1)} GB`;
+}
 
 function cycle<T>(list: T[], current: T): T {
   return list[(list.indexOf(current) + 1) % list.length];
@@ -372,6 +379,27 @@ export function SettingsPage(props: { active: boolean }) {
     }
     refetch();
   };
+  // The cache size is measured off the UI thread and again each time Settings opens.
+  const [cacheSize, { refetch: refetchCache }] = createResource(() => props.active, (active) => (active ? cacheApi.size() : 0));
+  const [confirmClear, setConfirmClear] = createSignal(false);
+  let confirmTimer: number | undefined;
+  const clearCache = async () => {
+    if (!confirmClear()) {
+      setConfirmClear(true);
+      clearTimeout(confirmTimer);
+      confirmTimer = window.setTimeout(() => setConfirmClear(false), 5000);
+      return;
+    }
+    clearTimeout(confirmTimer);
+    setConfirmClear(false);
+    try {
+      toast(t('settings.cacheCleared', { size: formatBytes(await cacheApi.clear()) }));
+    } catch (err) {
+      toast(errorText(err));
+    }
+    refetchCache();
+  };
+  onCleanup(() => clearTimeout(confirmTimer));
   const langPref = ['', ...languages];
   const item = (label: () => string, value: () => string, onClick: () => void, first = false) => (
     <button class="setting" data-nav data-nav-default={first ? '' : undefined} onClick={onClick}>
@@ -486,6 +514,21 @@ export function SettingsPage(props: { active: boolean }) {
         <div class="sub-preview" aria-hidden="true">
           <span style={previewCss(s())}>{t('settings.subPreview')}</span>
         </div>
+        {item(
+          () => t('settings.cacheLimit'),
+          () => (s().cacheLimitGB ? t('settings.cacheGb', { n: s().cacheLimitGB }) : t('settings.cacheUnlimited')),
+          () => void updateSettings({ cacheLimitGB: cycle(cacheLimits, s().cacheLimitGB) }),
+        )}
+        {item(
+          () => t('settings.cacheClearExit'),
+          () => (s().clearCacheOnExit ? t('settings.on') : t('settings.off')),
+          () => void updateSettings({ clearCacheOnExit: !s().clearCacheOnExit }),
+        )}
+        {item(
+          () => (confirmClear() ? t('settings.cacheConfirm', { size: formatBytes(cacheSize() ?? 0) }) : t('settings.cacheClear')),
+          () => (cacheSize.loading ? '…' : formatBytes(cacheSize() ?? 0)),
+          () => void clearCache(),
+        )}
         <button class="setting" data-nav onClick={() => void Window.ToggleFullscreen()}>
           <span>{t('settings.fullscreen')}</span>
           <Maximize />

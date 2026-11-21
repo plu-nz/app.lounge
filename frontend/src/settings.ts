@@ -15,6 +15,8 @@ const [settings, setSignal] = createSignal<Settings>({
   skipSegments: 'ask',
   theme: 'gtk',
   accent: 'theme',
+  cacheLimitGB: 10,
+  clearCacheOnExit: false,
 });
 export { settings };
 

@@ -66,6 +66,11 @@ func main() {
 	if err != nil {
 		// Direct HTTP streams still work without the torrent engine.
 		log.Printf("torrents disabled: %v", err)
+	} else {
+		torrents.SetCachePolicy(func() torrent.CachePolicy {
+			p := prefs.Get()
+			return torrent.CachePolicy{LimitBytes: int64(p.CacheLimitGB) << 30, ClearOnExit: p.ClearCacheOnExit}
+		})
 	}
 
 	phoneAdd := &PhoneAddService{addons: addons, client: client}
@@ -99,6 +104,7 @@ func main() {
 			application.NewService(&SettingsService{settings: prefs}),
 			application.NewService(newSegmentService()),
 			application.NewService(&TracksService{settings: prefs, overrides: trackPrefs}),
+			application.NewService(&CacheService{torrents: torrents}),
 			application.NewService(themes),
 			application.NewService(account),
 			application.NewService(&AppService{debug: os.Getenv("LOUNGE_DEBUG") != ""}),

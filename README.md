@@ -99,7 +99,7 @@ The project layout and conventions are in [AGENTS.md](AGENTS.md).
 ## Data
 
 - Settings, installed addons, and watch progress are stored as JSON in `~/.config/lounge/`.
-- Torrent data is kept in `~/.cache/lounge/torrents/` only while it plays. Lounge removes it when playback stops, at exit, and at the next launch.
+- Torrent data is kept in `~/.cache/lounge/torrents/` as a cache, so a stopped video resumes without downloading again. Settings sets a limit (5, 10, 20, 50 GB, or unlimited; 10 by default): when the cache grows past it, Lounge deletes the least recently used torrents, never the one playing. Settings also shows the cache size, can clear it, and can clear it whenever Lounge closes.
 - Lounge does not seed.
 
 ## Releases and website

@@ -111,6 +111,9 @@ export type Settings = {
   /** theme is 'gtk' (follow the desktop) or 'lounge'; empty means 'gtk'. */
   theme: string;
   accent: string;
+  /** cacheLimitGB caps the torrent cache; 0 means unlimited. */
+  cacheLimitGB: number;
+  clearCacheOnExit: boolean;
 };
 
 /** GtkTheme is the desktop's GTK theme; colors are CSS values, empty when undefined. */
@@ -214,6 +217,13 @@ export type TrackResult = { audioId: number; subId: number; subOff: boolean };
 export const tracksApi = {
   select: (titleId: string, list: TrackInfo[]) => call<TrackResult>('TracksService.Select', titleId, list),
   remember: (titleId: string, kind: 'audio' | 'sub', choice: TrackChoice) => call<void>('TracksService.Remember', titleId, kind, choice),
+};
+
+export const cacheApi = {
+  /** size is the bytes of torrent data on disk. */
+  size: () => call<number>('CacheService.Size'),
+  /** clear deletes cached torrent data except the torrent playing; it returns the bytes freed. */
+  clear: () => call<number>('CacheService.Clear'),
 };
 
 export const player = {
