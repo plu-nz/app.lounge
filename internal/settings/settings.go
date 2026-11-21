@@ -48,6 +48,17 @@ type Settings struct {
 	AudioDevice string `json:"audioDevice"`
 	// HDR is "tonemap" (HDR to SDR, default) or "off". Empty means "tonemap".
 	HDR string `json:"hdr"`
+	// SourceMode is "ask" (also empty) to choose a source from the list, or
+	// "auto" to play the best-ranked one.
+	SourceMode string `json:"sourceMode"`
+	// SourceMaxHeight caps the resolution of automatic picks (0 = any).
+	SourceMaxHeight int `json:"sourceMaxHeight"`
+	// SourceMaxSizeGB caps the size of automatic picks (0 = any).
+	SourceMaxSizeGB int `json:"sourceMaxSizeGb"`
+	// SourcePrefer is "direct", "torrent", or empty for no preference.
+	SourcePrefer string `json:"sourcePrefer"`
+	// SourceMinSeeders rejects torrents with fewer seeders (0 = any).
+	SourceMinSeeders int `json:"sourceMinSeeders"`
 }
 
 // Defaults returns the first-run preferences.

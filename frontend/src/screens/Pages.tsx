@@ -330,6 +330,10 @@ function formatBytes(n: number): string {
   if (n < 1e9) return `${Math.round(n / 1e6)} MB`;
   return `${(n / 1e9).toFixed(1)} GB`;
 }
+const sourceHeights = [0, 2160, 1080, 720];
+const sourceSizes = [0, 5, 10, 20, 40];
+const sourcePrefs = ['', 'direct', 'torrent'];
+const sourceSeeders = [0, 5, 20, 50];
 
 function cycle<T>(list: T[], current: T): T {
   return list[(list.indexOf(current) + 1) % list.length];
@@ -499,6 +503,34 @@ export function SettingsPage(props: { active: boolean }) {
           () => t(`settings.skip${{ off: 'Off', auto: 'Auto' }[s().skipSegments] ?? 'Ask'}` as Parameters<typeof t>[0]),
           () => void updateSettings({ skipSegments: cycle(skipModes, s().skipSegments || 'ask') }),
         )}
+        {item(
+          () => t('settings.sourceMode'),
+          () => (s().sourceMode === 'auto' ? t('settings.sourceAuto') : t('settings.sourceAsk')),
+          () => void updateSettings({ sourceMode: s().sourceMode === 'auto' ? 'ask' : 'auto' }),
+        )}
+        <Show when={s().sourceMode === 'auto'}>
+          {item(
+            () => t('settings.sourceRes'),
+            () => (s().sourceMaxHeight ? (s().sourceMaxHeight === 2160 ? '4K' : `${s().sourceMaxHeight}p`) : t('settings.any')),
+            () => void updateSettings({ sourceMaxHeight: cycle(sourceHeights, s().sourceMaxHeight || 0) }),
+          )}
+          {item(
+            () => t('settings.sourceSize'),
+            () => (s().sourceMaxSizeGb ? `${s().sourceMaxSizeGb} GB` : t('settings.any')),
+            () => void updateSettings({ sourceMaxSizeGb: cycle(sourceSizes, s().sourceMaxSizeGb || 0) }),
+          )}
+          {item(
+            () => t('settings.sourcePrefer'),
+            () =>
+              s().sourcePrefer === 'direct' ? t('settings.sourceDirect') : s().sourcePrefer === 'torrent' ? t('settings.sourceTorrent') : t('settings.none'),
+            () => void updateSettings({ sourcePrefer: cycle(sourcePrefs, s().sourcePrefer || '') }),
+          )}
+          {item(
+            () => t('settings.sourceMinSeeders'),
+            () => (s().sourceMinSeeders ? `${s().sourceMinSeeders}` : t('settings.any')),
+            () => void updateSettings({ sourceMinSeeders: cycle(sourceSeeders, s().sourceMinSeeders || 0) }),
+          )}
+        </Show>
         {item(
           () => t('settings.audioLang'),
           () => langLabel(s().audioLanguages[0] ?? ''),

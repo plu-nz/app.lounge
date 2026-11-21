@@ -21,6 +21,11 @@ const [settings, setSignal] = createSignal<Settings>({
   nightMode: false,
   audioDevice: '',
   hdr: 'tonemap',
+  sourceMode: 'ask',
+  sourceMaxHeight: 0,
+  sourceMaxSizeGb: 0,
+  sourcePrefer: '',
+  sourceMinSeeders: 0,
 });
 export { settings };
 

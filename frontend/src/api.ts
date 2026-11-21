@@ -121,6 +121,15 @@ export type Settings = {
   audioDevice: string;
   /** hdr is 'tonemap' (default) or 'off'. */
   hdr: string;
+  /** sourceMode is "ask" (also empty) or "auto"; see internal/sources. */
+  sourceMode: string;
+  /** sourceMaxHeight is 0 (any), 2160, 1080 or 720. */
+  sourceMaxHeight: number;
+  /** sourceMaxSizeGb is 0 (any) or a size cap in GB. */
+  sourceMaxSizeGb: number;
+  /** sourcePrefer is "direct", "torrent" or empty. */
+  sourcePrefer: string;
+  sourceMinSeeders: number;
 };
 
 /** GtkTheme is the desktop's GTK theme; colors are CSS values, empty when undefined. */
@@ -210,6 +219,13 @@ export const library = {
   remove: (id: string) => call<void>('LibraryService.Remove', id),
   setWatched: (videoId: string, watched: boolean) => call<void>('LibraryService.SetWatched', videoId, watched),
   watched: (ids: string[]) => call<string[] | null>('LibraryService.Watched', ids).then((r) => r ?? []),
+};
+
+/** sourcesApi ranks sources under the user's rules (internal/sources). */
+export const sourcesApi = {
+  /** pick returns the best source, or null when automatic selection is off or nothing passes. */
+  pick: (groups: StreamGroup[]) =>
+    call<{ group: number; stream: number } | null>('SourcesService.Pick', groups),
 };
 
 export const settingsApi = {

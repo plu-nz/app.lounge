@@ -14,10 +14,10 @@ import (
 	"github.com/plu-nz/app.lounge/internal/library"
 	"github.com/plu-nz/app.lounge/internal/player"
 	"github.com/plu-nz/app.lounge/internal/settings"
-	"github.com/plu-nz/app.lounge/internal/tracks"
 	"github.com/plu-nz/app.lounge/internal/store"
 	"github.com/plu-nz/app.lounge/internal/stremio"
 	"github.com/plu-nz/app.lounge/internal/torrent"
+	"github.com/plu-nz/app.lounge/internal/tracks"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
@@ -110,6 +110,7 @@ func main() {
 			application.NewService(newSegmentService()),
 			application.NewService(&TracksService{settings: prefs, overrides: trackPrefs}),
 			application.NewService(&CacheService{torrents: torrents}),
+			application.NewService(&SourcesService{settings: prefs}),
 			application.NewService(themes),
 			application.NewService(account),
 			application.NewService(profileSvc),
