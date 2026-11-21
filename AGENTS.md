@@ -20,7 +20,7 @@ The app is one Go binary built with Wails 3. The window is GTK 4 with WebKitGTK 
   - Stremio account calls: `api.strem.io/api/` for login and addonCollectionGet, and `link.stremio.com/api/v2/` for code sign-in. `account_service.go` mirrors the account's addons, read-only, into the local list.
 - `internal/torrent` wraps `anacrolix/torrent` and serves files over `127.0.0.1` HTTP with range support, so mpv can stream and seek while pieces download.
 - `internal/gtktheme` reads the active GTK theme's named colors through GTK and reports theme changes; the UI gets them as `theme` events.
-- `internal/library` stores watch progress and watched videos. `internal/settings` stores preferences. `internal/store` holds the shared JSON documents in `~/.config/lounge/`.
+- `internal/library` stores watch progress and watched videos. `internal/settings` stores preferences. `internal/store` holds the shared JSON documents. They live per profile in `~/.config/lounge/profiles/<id>/`; `profiles.json` lists the profiles and the last one used, and documents from before profiles are moved into the `default` profile on first run. Switching profiles (`ProfileService`) points the one shared `Store` at another directory and calls `Reload` on the library, settings, addons, and account state, then the UI reloads.
 - `frontend/src`:
   - `nav.ts` provides spatial navigation for remotes: `data-nav`, `data-nav-group`, `data-nav-entry`, `data-nav-row`, `data-nav-pane`, `data-nav-block`, `data-nav-top` (a fraction of the pane, or `nearest`), `data-nav-scope`, and the back stack. It scrolls with its own short animation, because WebKit's smooth scrolling lags behind a held arrow key;
   - `router.ts` is a stack router whose screens stay mounted underneath;

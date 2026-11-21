@@ -26,6 +26,7 @@ Website and downloads: [lounge.plu.nz](https://lounge.plu.nz/).
 - Follows the desktop's GTK theme, light or dark, including its accent color, and switches when the theme changes. The built-in Lounge colors stay available in Settings.
 - Continue watching with resume. When resuming, Lounge prefers the last source used.
 - Automatic next episode, using the same binge group when the addon provides one.
+- Profiles: each person has their own watch progress, settings, addons, and Stremio account. A picker asks who is watching at launch when there is more than one profile; profiles are created, renamed, and deleted in Settings, and the rail has a quick switch. Existing data becomes the first profile automatically.
 - English, Portuguese, and Spanish UI. The language follows the system unless one is chosen in Settings.
 
 ## Controls
@@ -95,7 +96,7 @@ The project layout and conventions are in [AGENTS.md](AGENTS.md).
 
 ## Data
 
-- Settings, installed addons, and watch progress are stored as JSON in `~/.config/lounge/`.
+- Settings, installed addons, and watch progress are stored as JSON per profile in `~/.config/lounge/profiles/<id>/`.
 - Torrent data is kept in `~/.cache/lounge/torrents/` only while it plays. Lounge removes it when playback stops, at exit, and at the next launch.
 - Lounge does not seed.
 

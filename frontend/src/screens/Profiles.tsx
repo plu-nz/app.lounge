@@ -1,4 +1,4 @@
-import { createResource, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { createEffect, createResource, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { Check, Pencil, Plus, Trash2, Users, X } from 'lucide-solid';
 import { player, profiles, type Profile } from '../api';
 import { errorText, toast } from '../components';
@@ -116,7 +116,10 @@ export function ProfilesPage() {
   const [newName, setNewName] = createSignal('');
   let page!: HTMLDivElement;
 
-  onMount(() => queueMicrotask(() => focusFirst(page)));
+  // The list arrives after mount; focus the first control once it is there.
+  createEffect(() => {
+    if (list() && !page.contains(document.activeElement)) queueMicrotask(() => focusFirst(page));
+  });
   onCleanup(
     onBack(() => {
       if (!mode()) return false;
