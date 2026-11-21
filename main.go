@@ -126,6 +126,10 @@ func main() {
 	})
 
 	phoneAdd.emit = func(name string, data ...any) { app.Event.Emit(name, data...) }
+	if torrents != nil {
+		torrents.StartStats(func(st torrent.Stats) { app.Event.Emit("torrent", st) })
+	}
+
 	// A signed-in account's addons are mirrored on every launch.
 	account.changed = func() { app.Event.Emit("addons") }
 	account.libraryChanged = func() { app.Event.Emit("library") }
