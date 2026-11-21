@@ -1295,6 +1295,24 @@ button {
   color: var(--plz-text);
 }
 
+.phone-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.phone-add .qr {
+  width: 14rem;
+  height: 14rem;
+  padding: 0.6rem;
+  border-radius: 0.6rem;
+  background: #fff;
+  image-rendering: pixelated;
+}
+
 /* Sources ------------------------------------------------------------ */
 
 .sources {

@@ -9,6 +9,7 @@ Website and downloads: [lounge.plu.nz](https://lounge.plu.nz/).
 ## Features
 
 - Install, enable, reorder, and remove Stremio addons by URL. Cinemeta and OpenSubtitles v3 are installed on first launch.
+- Add addons from a phone: a QR code opens a one-time page on the local network where you paste the addon link.
 - Sign in with a Stremio account, either with a QR code or code confirmed on a phone, or with email and password. While signed in:
   - the addon list mirrors the account's collection, synced at sign-in, at every launch, and on demand;
   - the list is read-only in Lounge, so the account is never changed;

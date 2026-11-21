@@ -1,8 +1,9 @@
 import { createEffect, createResource, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
-import { ArrowDown, ArrowUp, Delete, LogIn, LogOut, Maximize, Plus, Power, RefreshCw, Trash2, UserRound } from 'lucide-solid';
+import { ArrowDown, ArrowUp, Delete, LogIn, LogOut, Maximize, Plus, Power, Smartphone, RefreshCw, Trash2, UserRound } from 'lucide-solid';
 import { Window, Application } from '@wailsio/runtime';
 import { account, addons, addonsVersion, content, type Addon, type MetaPreview } from '../api';
 import { Card, errorText, Spinner, toast } from '../components';
+import { PhonePanel } from './PhonePanel';
 import { lang, languageNames, languages, t, typeName } from '../i18n';
 import { focusEl, focusFirst } from '../nav';
 import { push } from '../router';
@@ -198,6 +199,7 @@ export function Addons() {
   };
   const [url, setUrl] = createSignal('');
   const [busy, setBusy] = createSignal(false);
+  const [phone, setPhone] = createSignal(false);
 
   const run = async (fn: () => Promise<unknown>, keepFocus?: HTMLElement) => {
     try {
@@ -253,11 +255,18 @@ export function Addons() {
           {busy() ? <Spinner /> : <Plus />}
           {t('addons.install')}
         </button>
+        <button class="btn" data-nav onClick={() => setPhone(true)}>
+          <Smartphone />
+          {t('addons.fromPhone')}
+        </button>
         <button class="btn" data-nav onClick={(e) => run(() => addons.refresh(), e.currentTarget)}>
           <RefreshCw />
           {t('addons.refresh')}
         </button>
       </div>
+      <Show when={phone()}>
+        <PhonePanel onClose={() => setPhone(false)} />
+      </Show>
       </Show>
       <For each={list()}>
         {(ad: Addon, i) => (
