@@ -8,6 +8,7 @@ const [settings, setSignal] = createSignal<Settings>({
   subtitleLanguages: [],
   subtitleScale: 1,
   autoplayNext: true,
+  skipSegments: 'ask',
   theme: 'gtk',
   accent: 'theme',
 });

@@ -18,6 +18,9 @@ type Settings struct {
 	SubtitleScale float64 `json:"subtitleScale"`
 	// AutoplayNext starts the next episode when one ends.
 	AutoplayNext bool `json:"autoplayNext"`
+	// SkipSegments is how intros, recaps, and credits are skipped: "off",
+	// "ask" (a button), or "auto".
+	SkipSegments string `json:"skipSegments"`
 	// Theme is "gtk" to follow the desktop's GTK theme or "lounge" for the
 	// built-in Tinta colors. Empty means "gtk".
 	Theme string `json:"theme"`
@@ -33,7 +36,8 @@ func Defaults() Settings {
 		SubtitleLanguages: []string{},
 		SubtitleScale:     1,
 		AutoplayNext:      true,
-		Theme:             "gtk",
+		SkipSegments:      "ask",
+		Theme:            "gtk",
 		Accent:            "theme",
 	}
 }

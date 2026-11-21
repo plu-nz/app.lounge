@@ -1,6 +1,6 @@
-import { createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { AudioLines, Gauge, Layers, Pause, Play, RotateCcw, RotateCw, SkipForward, Subtitles } from 'lucide-solid';
-import { content, library, player, type TorrentStatus, type Video } from '../api';
+import { content, library, player, segmentsApi, type Chapter, type Segment, type TorrentStatus, type Video } from '../api';
 import { Panel, Spinner, errorText } from '../components';
 import { t } from '../i18n';
 import { focusEl, onBack } from '../nav';
@@ -66,6 +66,48 @@ export function Player(props: { play: PlayContext; active: boolean }) {
     if (!ctx.video) return undefined;
     const i = ctx.videos.findIndex((v) => v.id === ctx.video!.id);
     return i >= 0 ? ctx.videos[i + 1] : undefined;
+  });
+
+  // Intro, recap, and credits segments: from the chapters and the online database.
+  const [segments, setSegments] = createSignal<Segment[]>([]);
+  const [skipped, setSkipped] = createSignal<string[]>([]);
+  let chapters: Chapter[] = [];
+  let segmentRun = 0;
+  const segmentKey = (s: Segment) => `${s.kind}:${s.start}`;
+  const refreshSegments = async () => {
+    const run = ++segmentRun;
+    const imdb = ctx.meta.type === 'series' && /^tt\d+$/.test(ctx.meta.id) ? ctx.meta.id : '';
+    const v = ctx.video;
+    const found = await segmentsApi.resolve(chapters, duration(), imdb, v?.season ?? 0, v?.episode ?? v?.number ?? 0);
+    if (run === segmentRun) setSegments(found);
+  };
+  const activeSegment = createMemo((): Segment | undefined => {
+    if (!started() || settings().skipSegments === 'off') return undefined;
+    const now = time();
+    // A second of margin keeps the button from flashing at the very end.
+    return segments().find((s) => now >= s.start && now < s.end - 1 && !skipped().includes(segmentKey(s)));
+  });
+  const skipSegment = (s: Segment) => {
+    setSkipped((k) => [...k, segmentKey(s)]);
+    if (s.kind === 'credits' && nextVideo()) return void playNext();
+    void player.command('seek', s.end, 'absolute');
+  };
+  const skipLabel = (s: Segment) =>
+    s.kind === 'credits' && nextVideo() ? t('player.next') : t(`player.skip${s.kind[0].toUpperCase()}${s.kind.slice(1)}` as Parameters<typeof t>[0]);
+  createEffect(() => {
+    const s = activeSegment();
+    if (!s || !props.active || menu() || error() || countdown() !== undefined) return;
+    if (settings().skipSegments === 'auto') {
+      // Credits only skip on their own when the next episode starts by itself.
+      if (s.kind === 'credits' && !(nextVideo() && settings().autoplayNext)) return;
+      skipSegment(s);
+      return;
+    }
+    // Ask: put the button under the remote's OK key.
+    queueMicrotask(() => {
+      const btn = document.querySelector<HTMLElement>('.skip-card .btn');
+      if (btn) focusEl(btn);
+    });
   });
 
   let hideTimer: number | undefined;
@@ -233,12 +275,17 @@ export function Player(props: { play: PlayContext; active: boolean }) {
           case 'track-list':
             setTracks(Array.isArray(e.value) ? e.value : []);
             break;
+          case 'chapter-list':
+            chapters = Array.isArray(e.value) ? e.value : [];
+            void refreshSegments();
+            break;
           case 'speed':
             if (typeof e.value === 'number') setSpeed(e.value);
             break;
         }
       } else if (e.kind === 'loaded') {
         void addExternalSubtitles();
+        void refreshSegments();
       } else if (e.kind === 'end') {
         const reason = e.value?.reason;
         if (reason === 'error') {
@@ -275,6 +322,7 @@ export function Player(props: { play: PlayContext; active: boolean }) {
     const onKey = (e: KeyboardEvent) => {
       if (!props.active || menu()) return;
       const k = e.key;
+      if (k === 'Enter' && document.activeElement?.closest('.skip-card')) return;
       if (k === 'MediaPlayPause' || (k === ' ' && !visible())) {
         e.preventDefault();
         togglePause();
@@ -453,6 +501,15 @@ export function Player(props: { play: PlayContext; active: boolean }) {
           <p>{subtitle()}</p>
         </Show>
       </div>
+
+      <Show when={settings().skipSegments === 'ask' && activeSegment() && countdown() === undefined && !error()}>
+        <div class="skip-card" classList={{ raised: visible() }}>
+          <button class="btn primary" data-nav onClick={() => skipSegment(activeSegment()!)}>
+            <SkipForward />
+            {skipLabel(activeSegment()!)}
+          </button>
+        </div>
+      </Show>
 
       <Show when={countdown() !== undefined && nextVideo()}>
         <div class="next-card">

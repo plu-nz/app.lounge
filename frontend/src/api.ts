@@ -100,6 +100,8 @@ export type Settings = {
   subtitleLanguages: string[];
   subtitleScale: number;
   autoplayNext: boolean;
+  /** skipSegments is 'off', 'ask' (a button), or 'auto'. */
+  skipSegments: string;
   /** theme is 'gtk' (follow the desktop) or 'lounge'; empty means 'gtk'. */
   theme: string;
   accent: string;
@@ -208,6 +210,17 @@ export const player = {
   stop: () => call<void>('PlayerService.Stop'),
   torrentStatus: (hash: string) => call<TorrentStatus | null>('PlayerService.TorrentStatus', hash),
   on: (fn: (e: PlayerEvent) => void) => Events.On('player', (ev: { data: PlayerEvent }) => fn(ev.data)),
+};
+
+export type Segment = { kind: 'intro' | 'recap' | 'credits'; start: number; end: number; source: string };
+export type Chapter = { title: string; time: number };
+
+export const segmentsApi = {
+  /** resolve merges chapter-based segments with the online database; it never fails. */
+  resolve: (chapters: Chapter[], duration: number, imdbId: string, season: number, episode: number) =>
+    call<Segment[] | null>('SegmentService.Resolve', chapters, duration, imdbId, season, episode)
+      .then((r) => r ?? [])
+      .catch(() => [] as Segment[]),
 };
 
 export type AccountStatus = { signedIn: boolean; email: string; syncedAt: number; error?: string };

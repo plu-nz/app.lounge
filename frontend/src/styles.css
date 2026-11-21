@@ -1208,6 +1208,17 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+.skip-card {
+  position: absolute;
+  right: 3rem;
+  bottom: 3rem;
+  transition: bottom 0.2s;
+}
+
+.skip-card.raised {
+  bottom: 9rem;
+}
+
 .next-card {
   position: absolute;
   right: 3rem;

@@ -37,7 +37,7 @@ type Event struct {
 // observed lists the properties the UI follows.
 var observed = []string{
 	"pause", "time-pos", "duration", "paused-for-cache", "cache-buffering-state",
-	"demuxer-cache-time", "track-list", "aid", "sid", "volume", "mute", "speed",
+	"demuxer-cache-time", "track-list", "chapter-list", "aid", "sid", "volume", "mute", "speed",
 	"sub-delay", "sub-scale", "sub-pos", "idle-active", "eof-reached", "media-title",
 	"video-params/w", "video-params/h", "seeking", "hwdec-current",
 }
