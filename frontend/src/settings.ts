@@ -10,6 +10,8 @@ const [settings, setSignal] = createSignal<Settings>({
   autoplayNext: true,
   theme: 'gtk',
   accent: 'theme',
+  cacheLimitGB: 10,
+  clearCacheOnExit: false,
 });
 export { settings };
 

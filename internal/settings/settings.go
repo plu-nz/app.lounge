@@ -24,6 +24,10 @@ type Settings struct {
 	// Accent is "theme" for the GTK theme's accent, or one of the
 	// Tinta accents.
 	Accent string `json:"accent"`
+	// CacheLimitGB caps the torrent cache in gigabytes; 0 means unlimited.
+	CacheLimitGB int `json:"cacheLimitGB"`
+	// ClearCacheOnExit deletes the torrent cache when the app closes.
+	ClearCacheOnExit bool `json:"clearCacheOnExit"`
 }
 
 // Defaults returns the first-run preferences.
@@ -35,6 +39,7 @@ func Defaults() Settings {
 		AutoplayNext:      true,
 		Theme:             "gtk",
 		Accent:            "theme",
+		CacheLimitGB:      10,
 	}
 }
 
