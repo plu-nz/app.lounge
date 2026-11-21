@@ -90,6 +90,7 @@ func main() {
 			application.NewService(&AddonService{addons: addons}),
 			application.NewService(&LibraryService{library: lib}),
 			application.NewService(&SettingsService{settings: prefs}),
+			application.NewService(newSegmentService()),
 			application.NewService(themes),
 			application.NewService(account),
 			application.NewService(&AppService{debug: os.Getenv("LOUNGE_DEBUG") != ""}),
