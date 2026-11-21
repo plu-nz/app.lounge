@@ -1,12 +1,13 @@
 import { createMemo, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
-import { AudioLines, Gauge, Layers, Pause, Play, RotateCcw, RotateCw, SkipForward, Subtitles } from 'lucide-solid';
-import { content, library, player, type TorrentStatus, type Video } from '../api';
+import { Activity, AudioLines, Gauge, Layers, Pause, Play, RotateCcw, RotateCw, SkipForward, Subtitles } from 'lucide-solid';
+import { content, library, player, type TorrentStats, type Video } from '../api';
 import { Panel, Spinner, errorText } from '../components';
 import { t } from '../i18n';
 import { focusEl, onBack } from '../nav';
 import { pop, replaceTop, type PlayContext } from '../router';
 import { settings } from '../settings';
 import { findStream, streamKey, StreamPicker, toRequest } from '../streams';
+import { loadingText, NoSeeders, StatsPanel } from '../torrentui';
 import { episodeLabel } from './Details';
 
 type Track = { id: number; type: 'video' | 'audio' | 'sub'; lang?: string; title?: string; codec?: string; external?: boolean; selected?: boolean; 'demux-channel-count'?: number };
@@ -25,11 +26,6 @@ export function formatTime(s: number): string {
   const sec = Math.floor(s % 60);
   const mm = h ? String(m).padStart(2, '0') : String(m);
   return `${h ? `${h}:` : ''}${mm}:${String(sec).padStart(2, '0')}`;
-}
-
-function formatBytes(n: number): string {
-  if (n > 1e6) return `${(n / 1e6).toFixed(1)} MB`;
-  return `${Math.round(n / 1e3)} kB`;
 }
 
 const langNames = new Intl.DisplayNames(undefined, { type: 'language' });
@@ -59,7 +55,10 @@ export function Player(props: { play: PlayContext; active: boolean }) {
   const [visible, setVisible] = createSignal(true);
   const [menu, setMenu] = createSignal<'audio' | 'sub' | 'speed' | 'sources'>();
   const [osd, setOsd] = createSignal('');
-  const [torrent, setTorrent] = createSignal<TorrentStatus | null>(null);
+  const [torrent, setTorrent] = createSignal<TorrentStats | null>(null);
+  const [showStats, setShowStats] = createSignal(false);
+  const isTorrent = Boolean(ctx.request.infoHash);
+  let ignoreNoSeedersUntil = 0;
   const [countdown, setCountdown] = createSignal<number>();
 
   const nextVideo = createMemo((): Video | undefined => {
@@ -263,13 +262,13 @@ export function Player(props: { play: PlayContext; active: boolean }) {
 
     saveTimer = window.setInterval(() => !paused() && save(), 15000);
 
-    const hash = ctx.request.infoHash;
-    let statusTimer: number | undefined;
-    if (hash) {
-      statusTimer = window.setInterval(async () => {
-        if (started() && !buffering()) return;
-        setTorrent(await player.torrentStatus(hash).catch(() => null));
-      }, 1000);
+    if (isTorrent) {
+      const offTorrent = player.onTorrent((st) => {
+        if (closing) return;
+        // "Keep waiting" restarts the backend timer; skip one stale event.
+        setTorrent(performance.now() < ignoreNoSeedersUntil ? { ...st, noSeeders: false } : st);
+      });
+      onCleanup(offTorrent);
     }
 
     const onKey = (e: KeyboardEvent) => {
@@ -280,6 +279,11 @@ export function Player(props: { play: PlayContext; active: boolean }) {
         togglePause();
         return;
       }
+      if (isTorrent && (k === 'i' || k === 'I') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        return setShowStats((v) => !v);
+      }
+      if (noSeedersShown()) return;
       if (k === 'MediaPlay') return void player.set('pause', false);
       if (k === 'MediaPause') return void player.set('pause', true);
       if (k === 'MediaTrackNext' && nextVideo()) return void playNext();
@@ -365,7 +369,6 @@ export function Player(props: { play: PlayContext; active: boolean }) {
       removeEventListener('contextmenu', onContextMenu, true);
       removeEventListener('mousemove', onMouse);
       clearInterval(saveTimer);
-      clearInterval(statusTimer);
       clearTimeout(hideTimer);
       clearTimeout(osdTimer);
       clearInterval(countTimer);
@@ -396,6 +399,13 @@ export function Player(props: { play: PlayContext; active: boolean }) {
     });
   };
 
+  const noSeedersShown = () => Boolean(torrent()?.noSeeders) && (buffering() || !started()) && !error();
+  const keepWaiting = () => {
+    ignoreNoSeedersUntil = performance.now() + 2500;
+    setTorrent((st) => (st ? { ...st, noSeeders: false } : st));
+    void player.keepWaiting();
+  };
+
   const audioTracks = () => tracks().filter((tr) => tr.type === 'audio');
   const subTracks = () => tracks().filter((tr) => tr.type === 'sub');
   const fraction = () => (duration() > 0 ? time() / duration() : 0);
@@ -415,14 +425,22 @@ export function Player(props: { play: PlayContext; active: boolean }) {
       </Show>
       <div class="scrim" classList={{ 'hidden-ui': !visible() }} />
 
-      <Show when={(buffering() || !started()) && !error()}>
+      <Show when={(buffering() || !started()) && !error() && !noSeedersShown()}>
         <div class="center">
           <Spinner />
           <p>{t('player.loading')}</p>
-          <Show when={torrent()}>
-            {(st) => <p>{t('player.peers', { p: st().peers, s: formatBytes(st().downloadSpeed) })}</p>}
+          <Show when={isTorrent}>
+            <p>{loadingText(torrent())}</p>
           </Show>
         </div>
+      </Show>
+
+      <Show when={noSeedersShown()}>
+        <NoSeeders onOtherSource={() => setMenu('sources')} onKeepWaiting={keepWaiting} />
+      </Show>
+
+      <Show when={isTorrent && showStats()}>
+        <StatsPanel stats={torrent()} duration={duration()} />
       </Show>
 
       <Show when={error()}>
@@ -511,6 +529,11 @@ export function Player(props: { play: PlayContext; active: boolean }) {
               <Layers />
               {t('details.sources')}
             </button>
+            <Show when={isTorrent}>
+              <button class="btn icon" data-nav onClick={() => setShowStats((v) => !v)} aria-label={t('player.stats')} aria-pressed={showStats()}>
+                <Activity />
+              </button>
+            </Show>
           </div>
         </div>
       </Show>

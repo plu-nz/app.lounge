@@ -149,7 +149,27 @@ export type TorrentStatus = {
   size: number;
 };
 
-export type PlayerEvent = { kind: 'prop' | 'loaded' | 'end'; name?: string; value?: any };
+/** TorrentStats is the live snapshot the backend emits every second. */
+export type TorrentStats = {
+  active: boolean;
+  infoHash: string;
+  name: string;
+  phase: 'connecting' | 'metadata' | 'downloading';
+  peers: number;
+  totalPeers: number;
+  seeders: number;
+  downloadRate: number;
+  uploadRate: number;
+  downloaded: number;
+  size: number;
+  fileSize: number;
+  progress: number;
+  bufferedBytes: number;
+  bufferedPercent: number;
+  noSeeders: boolean;
+};
+
+export type PlayerEvent ={ kind: 'prop' | 'loaded' | 'end'; name?: string; value?: any };
 
 export const content = {
   rows: (type = '') => call<Row[]>('ContentService.Rows', type),
@@ -198,6 +218,8 @@ export const player = {
   get: async <T>(name: string) => JSON.parse(await call<string>('PlayerService.Property', name)) as T,
   stop: () => call<void>('PlayerService.Stop'),
   torrentStatus: (hash: string) => call<TorrentStatus | null>('PlayerService.TorrentStatus', hash),
+  keepWaiting: () => call<void>('PlayerService.KeepWaiting'),
+  onTorrent: (fn: (s: TorrentStats) => void) => Events.On('torrent', (ev: { data: TorrentStats }) => fn(ev.data)),
   on: (fn: (e: PlayerEvent) => void) => Events.On('player', (ev: { data: PlayerEvent }) => fn(ev.data)),
 };
 
