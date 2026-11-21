@@ -39,6 +39,15 @@ type Settings struct {
 	CacheLimitGB int `json:"cacheLimitGB"`
 	// ClearCacheOnExit deletes the torrent cache when the app closes.
 	ClearCacheOnExit bool `json:"clearCacheOnExit"`
+	// AudioOutput is "stereo" (downmix, default), "auto" (multichannel) or
+	// "passthrough" (bitstream over HDMI). Empty means "stereo".
+	AudioOutput string `json:"audioOutput"`
+	// NightMode compresses the audio's dynamic range.
+	NightMode bool `json:"nightMode"`
+	// AudioDevice is an mpv audio device name; empty is the system default.
+	AudioDevice string `json:"audioDevice"`
+	// HDR is "tonemap" (HDR to SDR, default) or "off". Empty means "tonemap".
+	HDR string `json:"hdr"`
 }
 
 // Defaults returns the first-run preferences.

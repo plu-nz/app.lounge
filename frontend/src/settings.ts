@@ -17,6 +17,10 @@ const [settings, setSignal] = createSignal<Settings>({
   accent: 'theme',
   cacheLimitGB: 10,
   clearCacheOnExit: false,
+  audioOutput: 'stereo',
+  nightMode: false,
+  audioDevice: '',
+  hdr: 'tonemap',
 });
 export { settings };
 
@@ -97,6 +101,7 @@ function apply(s: Settings) {
       position: s.subtitlePosition || 'bottom',
     })
     .catch(() => undefined);
+  void player.applyAV(s).catch(() => undefined);
 }
 
 export async function loadSettings() {

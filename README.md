@@ -23,6 +23,7 @@ Website and downloads: [lounge.plu.nz](https://lounge.plu.nz/).
   - seek and pause;
   - audio and subtitle tracks, including addon subtitles;
   - automatic audio and subtitle choice from the preferred languages in Settings (subtitles always, off, or only when the audio is not in your language), and a manual track change is remembered for that series or movie;
+  - audio output (stereo downmix, multichannel, or HDMI passthrough), night mode, audio device, and HDR tone-mapping to SDR, all in Settings;
   - playback speed;
   - switching sources while keeping the position.
 - Follows the desktop's GTK theme, light or dark, including its accent color, and switches when the theme changes. The built-in Lounge colors stay available in Settings.

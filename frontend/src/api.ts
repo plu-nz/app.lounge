@@ -114,6 +114,13 @@ export type Settings = {
   /** cacheLimitGB caps the torrent cache; 0 means unlimited. */
   cacheLimitGB: number;
   clearCacheOnExit: boolean;
+  /** audioOutput is 'stereo' (default), 'auto' or 'passthrough'. */
+  audioOutput: string;
+  nightMode: boolean;
+  /** audioDevice is an mpv device name; empty is the system default. */
+  audioDevice: string;
+  /** hdr is 'tonemap' (default) or 'off'. */
+  hdr: string;
 };
 
 /** GtkTheme is the desktop's GTK theme; colors are CSS values, empty when undefined. */
@@ -235,6 +242,8 @@ export const player = {
   subtitleStyle: (style: { scale: number; color: string; background: string; position: string }) =>
     call<void>('PlayerService.SetSubtitleStyle', style),
   stop: () => call<void>('PlayerService.Stop'),
+  applyAV: (s: Settings) => call<void>('PlayerService.ApplyAV', s),
+  audioDevices: () => call<{ name: string; description: string }[] | null>('PlayerService.AudioDevices').then((r) => r ?? []),
   torrentStatus: (hash: string) => call<TorrentStatus | null>('PlayerService.TorrentStatus', hash),
   on: (fn: (e: PlayerEvent) => void) => Events.On('player', (ev: { data: PlayerEvent }) => fn(ev.data)),
 };

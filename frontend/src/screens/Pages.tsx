@@ -7,6 +7,7 @@ import { PhonePanel } from './PhonePanel';
 import { lang, languageNames, languages, t, typeName } from '../i18n';
 import { focusEl, focusFirst } from '../nav';
 import { push } from '../router';
+import { AvSettings } from './AvSettings';
 import { followsGtk, gtkTheme, settings, updateSettings } from '../settings';
 import { nearestSize, previewCss, sizeKey, subBackgrounds, subColors, subPositions, subSizes } from '../subtitleStyle';
 
@@ -529,6 +530,7 @@ export function SettingsPage(props: { active: boolean }) {
           () => (cacheSize.loading ? '…' : formatBytes(cacheSize() ?? 0)),
           () => void clearCache(),
         )}
+        <AvSettings />
         <button class="setting" data-nav onClick={() => void Window.ToggleFullscreen()}>
           <span>{t('settings.fullscreen')}</span>
           <Maximize />
