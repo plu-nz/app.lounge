@@ -103,6 +103,10 @@ func main() {
 		},
 	})
 
+	if torrents != nil {
+		torrents.StartStats(func(st torrent.Stats) { app.Event.Emit("torrent", st) })
+	}
+
 	// A signed-in account's addons are mirrored on every launch.
 	account.changed = func() { app.Event.Emit("addons") }
 	if account.Status().SignedIn {

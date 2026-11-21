@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -45,6 +46,9 @@ type Engine struct {
 
 	mu     sync.Mutex
 	active map[metainfo.Hash]*torrent.Torrent
+	sess   *session      // the torrent whose stats are reported
+	abort  chan struct{} // closed by DropAll to cancel waiting Prepare calls
+	quit   chan struct{} // closed by Close to stop the stats loop
 }
 
 // Status reports download progress for the UI.
@@ -81,7 +85,7 @@ func Start(cacheDir string) (*Engine, error) {
 		client.Close()
 		return nil, err
 	}
-	e := &Engine{client: client, dataDir: dataDir, addr: ln.Addr().String(), active: map[metainfo.Hash]*torrent.Torrent{}}
+	e := &Engine{client: client, dataDir: dataDir, addr: ln.Addr().String(), active: map[metainfo.Hash]*torrent.Torrent{}, abort: make(chan struct{}), quit: make(chan struct{})}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /stream/{hash}/{idx}", e.serveFile)
 	mux.HandleFunc("HEAD /stream/{hash}/{idx}", e.serveFile)
@@ -117,10 +121,16 @@ func (e *Engine) Prepare(ctx context.Context, infoHash string, fileIdx int, file
 	t.AddTrackers(tiers)
 	e.mu.Lock()
 	e.active[h] = t
+	abort := e.abort
+	sess := &session{hash: h.HexString(), fileIdx: -1, dog: Watchdog{Timeout: NoSeedersTimeout}}
+	sess.dog.Reset(time.Now())
+	e.sess = sess
 	e.mu.Unlock()
 
 	select {
 	case <-t.GotInfo():
+	case <-abort:
+		return "", errors.New("cancelled")
 	case <-ctx.Done():
 		return "", fmt.Errorf("no peers sent the torrent metadata: %w", ctx.Err())
 	}
@@ -128,6 +138,9 @@ func (e *Engine) Prepare(ctx context.Context, infoHash string, fileIdx int, file
 	if idx < 0 {
 		return "", errors.New("the torrent has no video file")
 	}
+	sess.mu.Lock()
+	sess.fileIdx = idx
+	sess.mu.Unlock()
 	return fmt.Sprintf("http://%s/stream/%s/%d", e.addr, h.HexString(), idx), nil
 }
 
@@ -160,6 +173,9 @@ func (e *Engine) DropAll() {
 		_ = os.RemoveAll(filepath.Join(e.dataDir, h.HexString()))
 		delete(e.active, h)
 	}
+	e.sess = nil
+	close(e.abort)
+	e.abort = make(chan struct{})
 	e.mu.Unlock()
 }
 
@@ -167,6 +183,7 @@ func (e *Engine) DropAll() {
 func (e *Engine) Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
+	close(e.quit)
 	_ = e.server.Shutdown(ctx)
 	e.DropAll()
 	e.client.Close()
@@ -194,7 +211,13 @@ func (e *Engine) serveFile(w http.ResponseWriter, r *http.Request) {
 	reader.SetResponsive()
 	reader.SetReadahead(f.Length() / 100)
 	w.Header().Set("Content-Type", contentType(f.DisplayPath()))
-	http.ServeContent(w, r, path.Base(f.DisplayPath()), time.Time{}, reader)
+	var content io.ReadSeeker = reader
+	e.mu.Lock()
+	if e.sess != nil && e.sess.hash == h.HexString() {
+		content = posReader{ReadSeeker: reader, pos: &e.sess.pos}
+	}
+	e.mu.Unlock()
+	http.ServeContent(w, r, path.Base(f.DisplayPath()), time.Time{}, content)
 }
 
 func pickFile(files []*torrent.File, fileIdx int, filename string) int {

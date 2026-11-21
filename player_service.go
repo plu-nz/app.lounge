@@ -92,6 +92,13 @@ func (s *PlayerService) TorrentStatus(infoHash string) (*torrent.Status, error) 
 	return &st, nil
 }
 
+// KeepWaiting restarts the no-seeders timer of the loading torrent.
+func (s *PlayerService) KeepWaiting() {
+	if s.torrents != nil {
+		s.torrents.KeepWaiting()
+	}
+}
+
 // Command runs a raw mpv command, for example ["seek", "10"].
 func (s *PlayerService) Command(args []string) error {
 	return s.player.Command(args...)
