@@ -26,6 +26,7 @@ Website and downloads: [lounge.plu.nz](https://lounge.plu.nz/).
 - Follows the desktop's GTK theme, light or dark, including its accent color, and switches when the theme changes. The built-in Lounge colors stay available in Settings.
 - Continue watching with resume. When resuming, Lounge prefers the last source used.
 - Automatic next episode, using the same binge group when the addon provides one.
+- Skip intro, recap, and credits: a button, automatic skipping, or off (Settings). Segments come from the video's chapters and, for series episodes, from [IntroDB](https://introdb.app); the credits button offers the next episode when there is one.
 - English, Portuguese, and Spanish UI. The language follows the system unless one is chosen in Settings.
 
 ## Controls

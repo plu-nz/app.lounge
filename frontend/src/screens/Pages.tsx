@@ -308,6 +308,7 @@ export function Addons() {
 
 const namedAccents = ['blue', 'mauve', 'lavender', 'green', 'orange', 'red'];
 const themes = ['gtk', 'lounge'];
+const skipModes = ['ask', 'auto', 'off'];
 const mediaLangs = ['', 'por', 'eng', 'spa'];
 const subSizes = [0.8, 1, 1.2, 1.4, 1.6];
 
@@ -412,6 +413,11 @@ export function SettingsPage(props: { active: boolean }) {
           () => t('settings.autoplay'),
           () => (s().autoplayNext ? t('settings.on') : t('settings.off')),
           () => void updateSettings({ autoplayNext: !s().autoplayNext }),
+        )}
+        {item(
+          () => t('settings.skip'),
+          () => t(`settings.skip${{ off: 'Off', auto: 'Auto' }[s().skipSegments] ?? 'Ask'}` as Parameters<typeof t>[0]),
+          () => void updateSettings({ skipSegments: cycle(skipModes, s().skipSegments || 'ask') }),
         )}
         {item(
           () => t('settings.audioLang'),
