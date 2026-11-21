@@ -33,10 +33,11 @@ func main() {
 	if os.Getenv("GSK_RENDERER") == "" {
 		os.Setenv("GSK_RENDERER", "ngl")
 	}
-	st, err := store.Open("lounge")
+	profiles, err := store.OpenProfiles("lounge")
 	if err != nil {
 		log.Fatalf("config dir: %v", err)
 	}
+	st := profiles.Store()
 	prefs, err := settings.Load(st)
 	if err != nil {
 		log.Fatalf("settings: %v", err)
@@ -63,6 +64,10 @@ func main() {
 		log.Printf("torrents disabled: %v", err)
 	}
 
+	profileSvc := &ProfileService{
+		profiles: profiles, library: lib, settings: prefs, addons: addons, account: account,
+		changed: func() {},
+	}
 	themes := &ThemeService{debug: os.Getenv("LOUNGE_DEBUG") != ""}
 	var app *application.App
 	video, err := player.New(func(e player.Event) {
@@ -92,6 +97,7 @@ func main() {
 			application.NewService(&SettingsService{settings: prefs}),
 			application.NewService(themes),
 			application.NewService(account),
+			application.NewService(profileSvc),
 			application.NewService(&AppService{debug: os.Getenv("LOUNGE_DEBUG") != ""}),
 		},
 		OnShutdown: func() {
@@ -105,6 +111,7 @@ func main() {
 
 	// A signed-in account's addons are mirrored on every launch.
 	account.changed = func() { app.Event.Emit("addons") }
+	profileSvc.changed = func() { app.Event.Emit("profile") }
 	if account.Status().SignedIn {
 		go func() {
 			if _, err := account.Sync(); err != nil {
