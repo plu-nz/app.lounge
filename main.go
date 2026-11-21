@@ -63,6 +63,7 @@ func main() {
 		log.Printf("torrents disabled: %v", err)
 	}
 
+	phoneAdd := &PhoneAddService{addons: addons, client: client}
 	themes := &ThemeService{debug: os.Getenv("LOUNGE_DEBUG") != ""}
 	var app *application.App
 	video, err := player.New(func(e player.Event) {
@@ -88,6 +89,7 @@ func main() {
 			application.NewService(&PlayerService{player: video, torrents: torrents}),
 			application.NewService(&ContentService{content: &stremio.Content{Client: client, Addons: addons}}),
 			application.NewService(&AddonService{addons: addons}),
+			application.NewService(phoneAdd),
 			application.NewService(&LibraryService{library: lib}),
 			application.NewService(&SettingsService{settings: prefs}),
 			application.NewService(themes),
@@ -103,6 +105,7 @@ func main() {
 		},
 	})
 
+	phoneAdd.emit = func(name string, data ...any) { app.Event.Emit(name, data...) }
 	// A signed-in account's addons are mirrored on every launch.
 	account.changed = func() { app.Event.Emit("addons") }
 	if account.Status().SignedIn {

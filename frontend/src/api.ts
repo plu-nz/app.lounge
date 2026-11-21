@@ -166,6 +166,15 @@ const [addonsVersion, setAddonsVersion] = createSignal(0);
 export { addonsVersion };
 Events.On('addons', () => setAddonsVersion((v) => v + 1));
 
+export type PhoneSession = { url: string; qrcode: string };
+export type PhoneAddEvent = { ok?: boolean; name?: string; error?: string; stopped?: boolean };
+
+export const phoneAdd = {
+  start: () => call<PhoneSession>('PhoneAddService.Start'),
+  stop: () => call<void>('PhoneAddService.Stop'),
+  on: (fn: (e: PhoneAddEvent) => void) => Events.On('phoneadd', (ev: { data: PhoneAddEvent }) => fn(ev.data)),
+};
+
 export const addons = {
   list: () => call<Addon[] | null>('AddonService.List').then((r) => r ?? []),
   managed: () => call<boolean>('AddonService.Managed'),
