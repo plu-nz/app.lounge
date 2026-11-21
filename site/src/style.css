@@ -2,12 +2,12 @@
   --bg: #0f0f0f;
   --surface: #1c1c1c;
   --raised: #262633;
-  --text: #cdd6f4;
-  --muted: #bac2de;
-  --subtle: #9399b2;
-  --line: #393947;
+  --text: #D7D7D7;
+  --muted: #C3C3C3;
+  --subtle: #9A9A9A;
+  --line: #333333;
   --accent: #89b4fa;
-  --orange: #f6b6ab;
+  --orange: #FAB387;
   --green: #a6e3a1;
   --red: #f38ba8;
   color: var(--text);
@@ -44,27 +44,27 @@ nav a:hover, .site-footer a:hover, .install-links a:hover { color: var(--accent)
 .download-meta { color: var(--subtle); font-size: 13px; margin-top: 14px; }
 
 .tv { margin: 0; }
-.screen { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #11111b; border: 10px solid #181820; border-radius: 10px; box-shadow: 0 40px 90px -40px #89b4fa55, 0 0 0 1px var(--line); }
+.screen { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #0F0F0F; border: 10px solid #181820; border-radius: 10px; box-shadow: 0 40px 90px -40px #89b4fa55, 0 0 0 1px var(--line); }
 .stand { width: 26%; height: 14px; margin: 0 auto; background: linear-gradient(#181820, #0f0f0f); border-radius: 0 0 8px 8px; }
-.mock-backdrop { position: absolute; inset: 0; background: radial-gradient(ellipse at 78% 8%, #a6e3a166, transparent 46%), radial-gradient(ellipse at 60% 30%, #89b4fa55, transparent 52%), radial-gradient(ellipse at 95% 60%, #cba6f744, transparent 45%), linear-gradient(180deg, #1e1e2e, #11111b); }
-.mock-backdrop::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #11111bf0 0%, #11111b99 45%, transparent 75%), linear-gradient(0deg, #11111b 2%, transparent 50%); }
-.mock-nav { position: absolute; top: 5%; left: 4.5%; display: flex; gap: 2.2%; width: 70%; font-size: clamp(7px, 1vw, 12px); font-weight: 700; color: #a6adc8; }
+.mock-backdrop { position: absolute; inset: 0; background: radial-gradient(ellipse at 78% 8%, #a6e3a166, transparent 46%), radial-gradient(ellipse at 60% 30%, #89b4fa55, transparent 52%), radial-gradient(ellipse at 95% 60%, #cba6f744, transparent 45%), linear-gradient(180deg, #1e1e2e, #0F0F0F); }
+.mock-backdrop::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #0F0F0Ff0 0%, #0F0F0F99 45%, transparent 75%), linear-gradient(0deg, #0F0F0F 2%, transparent 50%); }
+.mock-nav { position: absolute; top: 5%; left: 4.5%; display: flex; gap: 2.2%; width: 70%; font-size: clamp(7px, 1vw, 12px); font-weight: 700; color: #AEAEAE; }
 .mock-nav span { padding: .45em .9em; border-radius: 99px; }
-.mock-nav .on { background: var(--accent); color: #11111b; }
+.mock-nav .on { background: var(--accent); color: #0F0F0F; }
 .mock-hero { position: absolute; left: 4.5%; top: 17%; width: 52%; }
 .mock-kicker { font-size: clamp(6px, .85vw, 11px); font-weight: 700; letter-spacing: .12em; color: var(--accent); text-transform: uppercase; }
 .mock-title { font-size: clamp(16px, 2.9vw, 38px); font-weight: 800; letter-spacing: -.04em; color: #f5f5f5; margin: .25em 0 .2em; }
-.mock-meta { font-size: clamp(7px, .95vw, 12px); color: #bac2de; }
+.mock-meta { font-size: clamp(7px, .95vw, 12px); color: #C3C3C3; }
 .mock-progress { margin-top: 5%; height: 3px; width: 60%; background: #ffffff26; border-radius: 2px; }
 .mock-progress span { display: block; width: 68%; height: 100%; background: var(--accent); border-radius: 2px; }
 .mock-row { position: absolute; left: 4.5%; right: -6%; bottom: 6%; display: flex; gap: 2%; }
 .poster { flex: 0 0 12.5%; aspect-ratio: 2 / 3; border-radius: 6px; box-shadow: 0 10px 20px -10px #000; }
 .poster.focused { outline: 3px solid var(--accent); outline-offset: 3px; transform: scale(1.08); transform-origin: bottom; }
-.p1 { background: linear-gradient(160deg, #f6b6ab, #45475a); }
+.p1 { background: linear-gradient(160deg, #FAB387, #484848); }
 .p2 { background: radial-gradient(circle at 50% 30%, #a6e3a1, #1e1e2e 75%); }
-.p3 { background: linear-gradient(200deg, #89b4fa, #313244 70%); }
-.p4 { background: linear-gradient(140deg, #f38ba8, #11111b); }
-.p5 { background: radial-gradient(circle at 30% 70%, #f9e2af, #313244 70%); }
+.p3 { background: linear-gradient(200deg, #89b4fa, #333333 70%); }
+.p4 { background: linear-gradient(140deg, #f38ba8, #0F0F0F); }
+.p5 { background: radial-gradient(circle at 30% 70%, #f9e2af, #333333 70%); }
 .p6 { background: linear-gradient(180deg, #cba6f7, #1e1e2e); }
 
 .idea { border-block: 1px solid var(--line); background: var(--surface); padding-block: 110px; }
@@ -93,9 +93,9 @@ kbd { font: 700 12px ui-monospace, monospace; background: var(--raised); border:
 .install-head p { color: var(--muted); line-height: 1.7; margin-bottom: 22px; }
 .steps { list-style: none; padding: 0; margin: 64px 0 0; display: grid; gap: 14px; }
 .steps li { display: grid; grid-template-columns: 52px 1fr; gap: 20px; align-items: start; border: 1px solid var(--line); background: var(--bg); padding: 22px; }
-.step-no { display: grid; place-items: center; width: 40px; height: 40px; background: var(--accent); color: #11111b; font-weight: 800; }
+.step-no { display: grid; place-items: center; width: 40px; height: 40px; background: var(--accent); color: #0F0F0F; font-weight: 800; }
 .steps h3 { font-size: 17px; margin: 9px 0 14px; }
-.code { display: flex; align-items: center; gap: 12px; background: #11111b; border: 1px solid var(--line); padding: 10px 10px 10px 16px; min-width: 0; }
+.code { display: flex; align-items: center; gap: 12px; background: #0F0F0F; border: 1px solid var(--line); padding: 10px 10px 10px 16px; min-width: 0; }
 .code code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 14px/1.6 ui-monospace, monospace; color: var(--green); }
 .code button { flex: none; background: var(--raised); color: var(--text); border: 1px solid var(--line); padding: 6px 12px; font: 700 12px system-ui, sans-serif; cursor: pointer; }
 .code button:hover { border-color: var(--accent); }

@@ -33,7 +33,7 @@ The app is one Go binary built with Wails 3. The window is GTK 4 with WebKitGTK 
 - Write code, comments, commits, and docs in English. Every user-facing string goes through `t()`, with entries in all three dictionaries.
 - Focusable UI elements are real `<button>`s or inputs marked `data-nav`. Style focus with the `.focused` class, not `:focus`; the class still shows when the window is not focused.
 - Use `rem` for sizes. The root font size scales with the screen height, so layouts hold from 720p to 4K.
-- Colors come from the shared Darkppuccin tokens (`--plz-*`) of `@plunz/storybook`. By default the UI follows the desktop's GTK theme: `settings.ts` maps the GTK palette onto the same tokens, so style with tokens and never hard-code surface or text colors. Fixed white and black are fine only over video and artwork. The accent is selectable.
+- Colors come from the shared Tinta tokens (`--plz-*`) of `@plunz/storybook`. By default the UI follows the desktop's GTK theme: `settings.ts` maps the GTK palette onto the same tokens, so style with tokens and never hard-code surface or text colors. Fixed white and black are fine only over video and artwork. The accent is selectable.
 - Keep Wails services thin and put logic in `internal/` packages with Go tests.
 - Lumera is a feature and UX reference only. Do not copy or translate its code: it is GPL-3.0 and this repository is not.
 - Pin dependencies. Use pnpm only; never npm, yarn, or Bun. `@plunz/storybook` is pinned to a Git revision.

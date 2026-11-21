@@ -19,10 +19,10 @@ type Settings struct {
 	// AutoplayNext starts the next episode when one ends.
 	AutoplayNext bool `json:"autoplayNext"`
 	// Theme is "gtk" to follow the desktop's GTK theme or "lounge" for the
-	// built-in Darkppuccin colors. Empty means "gtk".
+	// built-in Tinta colors. Empty means "gtk".
 	Theme string `json:"theme"`
 	// Accent is "theme" for the GTK theme's accent, or one of the
-	// Darkppuccin accents.
+	// Tinta accents.
 	Accent string `json:"accent"`
 }
 

@@ -24,7 +24,7 @@ export function followsGtk(s: Settings = settings()): boolean {
 const mix = (a: string, pct: number, b: string) => `color-mix(in srgb, ${a} ${pct}%, ${b})`;
 
 /**
- * gtkTokens maps a GTK theme onto the Darkppuccin tokens. Colors a theme
+ * gtkTokens maps a GTK theme onto the Tinta tokens. Colors a theme
  * does not define are mixed from its background and text, and the named
  * accents keep Lounge's hues.
  */

@@ -5,8 +5,9 @@ html {
   font-size: calc(100vh / 54);
 }
 
-/* Extra accents beyond the shared library's four, from Catppuccin Mocha,
-   which Darkppuccin follows. The "theme" accent is the GTK theme's own. */
+/* Extra Tinta accents (mauve, lavender) beyond the shared library's four; the
+   shared library will provide them once its pin is bumped. The "theme" accent
+   is the GTK theme's own. */
 .plz-theme {
   --plz-mauve: #cba6f7;
   --plz-lavender: #b4befe;
