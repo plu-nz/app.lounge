@@ -1,9 +1,10 @@
 import { createEffect, createSignal, For, JSX, onCleanup, onMount, Show } from 'solid-js';
-import { ChevronRight, Film, House, LoaderCircle, Puzzle, Search, Settings, Tv } from 'lucide-solid';
+import { ChevronRight, Film, House, LoaderCircle, Puzzle, Search, Settings, Tv, Users } from 'lucide-solid';
 import type { MetaPreview } from './api';
 import { t, typeName } from './i18n';
 import { focusEl, onBack } from './nav';
 import { replaceRoot, route, type Route } from './router';
+import { openProfilePicker } from './screens/Profiles';
 
 /** Rail is the left navigation; it expands while focused. */
 export function Rail() {
@@ -36,6 +37,10 @@ export function Rail() {
           </button>
         )}
       </For>
+      <button class="rail-item" data-nav onClick={() => openProfilePicker()}>
+        <Users />
+        <span>{t('profiles.switch')}</span>
+      </button>
     </nav>
   );
 }
