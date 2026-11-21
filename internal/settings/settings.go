@@ -24,6 +24,17 @@ type Settings struct {
 	// Accent is "theme" for the GTK theme's accent, or one of the
 	// Tinta accents.
 	Accent string `json:"accent"`
+	// SourceMode is "ask" (also empty) to choose a source from the list, or
+	// "auto" to play the best-ranked one.
+	SourceMode string `json:"sourceMode"`
+	// SourceMaxHeight caps the resolution of automatic picks (0 = any).
+	SourceMaxHeight int `json:"sourceMaxHeight"`
+	// SourceMaxSizeGB caps the size of automatic picks (0 = any).
+	SourceMaxSizeGB int `json:"sourceMaxSizeGb"`
+	// SourcePrefer is "direct", "torrent", or empty for no preference.
+	SourcePrefer string `json:"sourcePrefer"`
+	// SourceMinSeeders rejects torrents with fewer seeders (0 = any).
+	SourceMinSeeders int `json:"sourceMinSeeders"`
 }
 
 // Defaults returns the first-run preferences.
